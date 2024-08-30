@@ -56,6 +56,9 @@ def eddyDetection(SSH,Okubo_Weiss): # Test if area has negative Okubo-Weiss para
 
 
 def resolution(X,Y):
+    """
+    DO NOT USE!!!
+    """
     # For each in grid is each Y, and each contains all of X 
     grid = []
 
@@ -82,5 +85,21 @@ def resolution(X,Y):
 
     return grid
 
-def inner_eddy_region(eddy_center):
-    pass
+def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False):
+    """
+    Computes the inner region of a eddy \n
+    Set ether warm or cold True to compute the region
+    """
+
+    def pos_X_search():
+        pass
+
+
+    def pos_Y_search():
+        pass
+
+    if warm:
+        pass
+        
+    elif cold:
+        pass
