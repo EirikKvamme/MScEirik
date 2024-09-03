@@ -88,38 +88,62 @@ def resolution(X,Y):
 
     return grid
 
-def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False):
+def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False,eddiesDataset=None,use_eddyDataset=False):
     """
     Computes the inner region of a eddy \n
-    Set ether warm or cold True to compute the region
+    Set ether warm or cold True to compute the region\n
+    After first run of one eddy center, add the returned dataset as eddiesDataset!\n
+    This workes for both cold and warm eddies, which are set to values 2 and 1 in dataset
     """
-    eddies = xr.full_like(eta,fill_value=0)
-    eddies = eddies.rename("EddyDetection")
+
+
+    if use_eddyDataset:
+        eddies = eddiesDataset
+    else:
+        eddies = xr.full_like(eta,fill_value=0)
+        eddies = eddies.rename("EddyDetection")
     Eta = eta
     eta = eta.values
+
+
     def pos_X_search(eddy_location=list(),warm=False,cold=False):
         condXmax = 0
         condXmin = 0
         if warm:
             for i in range(0,100): # 100*2km radius
                 # Test is extent is found and stop for loop
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                    if -1-i+eddy_location[1] < 0:
+                        condXmin = True
+                    if 1+i+eddy_location[1] > 434:
+                        condXmax = True
                 if condXmax and condXmin:
                     continue
-
-                min_X = eta[eddy_location[0]][eddy_location[1]-i]
-                max_X = eta[eddy_location[0]][eddy_location[1]+i]
+                
+                try:
+                    min_X = eta[eddy_location[0]][eddy_location[1]-i]
+                except:
+                    pass
+                try:
+                    max_X = eta[eddy_location[0]][eddy_location[1]+i]
+                except:
+                    pass
 
                 # Check the change in SSH level from each point outwards from center
-                change_min = min_X - eta[eddy_location[0]][eddy_location[1]-i-1]
-                change_max = max_X - eta[eddy_location[0]][eddy_location[1]+i+1]
+                try:
+                    change_min = min_X - eta[eddy_location[0]][eddy_location[1]-i-1]
+                except:
+                    pass
+                try:
+                    change_max = max_X - eta[eddy_location[0]][eddy_location[1]+i+1]
+                except:
+                    pass
 
                 # Test conditions if extent is reached
                 if change_max < 0 and condXmax == False:
                     condXmax = eddy_location[1] + i + 1
-                    print('Xmax: ',change_max)
                 if change_min < 0 and condXmin == False:
                     condXmin = eddy_location[1] - i - 1
-                    print('Xmin: ',change_min)
                 
                 
         
@@ -132,15 +156,32 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
         elif cold:
             for i in range(0,100): # 100*2km radius
                 # Test is extent is found and stop for loop
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                    if -1-i+eddy_location[1] < 0:
+                        condXmin = True
+                    if 1+i+eddy_location[1] > 434:
+                        condXmax = True
                 if condXmax and condXmin:
                     continue
-
-                min_X = eta[eddy_location[0]][eddy_location[1]-i]
-                max_X = eta[eddy_location[0]][eddy_location[1]+i]
+                
+                try:
+                    min_X = eta[eddy_location[0]][eddy_location[1]-i]
+                except:
+                    pass
+                try:
+                    max_X = eta[eddy_location[0]][eddy_location[1]+i]
+                except:
+                    pass
 
                 # Check the change in SSH level from each point outwards from center
-                change_min = min_X - eta[eddy_location[0]][eddy_location[1]-i-1]
-                change_max = max_X - eta[eddy_location[0]][eddy_location[1]+i+1]
+                try:
+                    change_min = min_X - eta[eddy_location[0]][eddy_location[1]-i-1]
+                except:
+                    pass
+                try:
+                    change_max = max_X - eta[eddy_location[0]][eddy_location[1]+i+1]
+                except:
+                    pass
 
                 # Test conditions if extent is reached
                 if change_max > 0 and condXmax == False:
@@ -164,6 +205,17 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
         if warm:
             for i in range(0,47): # 100*2km radius
                 # Test is extent is found and stop for loop
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                    if -1-i+eddy_location[1] < 0:
+                        condXmin = True
+                    if 1+i+eddy_location[1] > 434:
+                        condXmax = True
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                    if -1-i+eddy_location[0] < 0:
+                        condYmin = True
+                    if 1+i+eddy_location[0] > 46:
+                        condYmax = True
+
                 if condXmax and condXmin and condYmax and condYmin:
                     continue
 
@@ -224,6 +276,18 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
         elif cold:
             for i in range(0,47): # 100*2km radius
                 # Test is extent is found and stop for loop
+                # Test is extent is found and stop for loop
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                    if -1-i+eddy_location[1] < 0:
+                        condXmin = True
+                    if 1+i+eddy_location[1] > 434:
+                        condXmax = True
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                    if -1-i+eddy_location[0] < 0:
+                        condYmin = True
+                    if 1+i+eddy_location[0] > 46:
+                        condYmax = True
+
                 if condXmax and condXmin and condYmax and condYmin:
                     continue
 
@@ -244,11 +308,24 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
                     max_Y = eta[eddy_location[0]-i][eddy_location[1]+i]
                 except:
                     pass
+
                 # Check the change in SSH level from each point outwards from center
-                change_minX = min_X - eta[eddy_location[0]-i-1][eddy_location[1]-i-1]
-                change_maxX = max_X - eta[eddy_location[0]+i+1][eddy_location[1]+i+1]
-                change_minY = min_Y - eta[eddy_location[0]+i+1][eddy_location[1]-i-1]
-                change_maxY = max_Y - eta[eddy_location[0]-i-1][eddy_location[1]+i+1]
+                try:
+                    change_minX = min_X - eta[eddy_location[0]-i-1][eddy_location[1]-i-1]
+                except:
+                    pass
+                try:
+                    change_maxX = max_X - eta[eddy_location[0]+i+1][eddy_location[1]+i+1]
+                except:
+                    pass
+                try:
+                    change_minY = min_Y - eta[eddy_location[0]+i+1][eddy_location[1]-i-1]
+                except:
+                    pass
+                try:
+                    change_maxY = max_Y - eta[eddy_location[0]-i-1][eddy_location[1]+i+1]
+                except:
+                    pass
 
                 # Test conditions if extent is reached
                 if change_maxX > 0 and condXmax == False:
@@ -275,24 +352,13 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
         if warm:
             for i in range(0,47): # 47*2km radius
                 # Test is extent is found and stop for loop
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                    if -1-i+eddy_location[0] < 0:
+                        condYmin = True
+                    if 1+i+eddy_location[0] > 46:
+                        condYmax = True
                 if condYmax and condYmin:
                     continue
-                try:
-                    if Eta.Y[-1-i+eddy_location[0]].values == Eta.Y[0].values or Eta.Y[1+i+eddy_location[1]].values == Eta.Y[-1].values:
-                        pass
-                except:
-                    try:
-                        if Eta.Y[-1-i+eddy_location[0]].values == Eta.Y[0].values:
-                            pass
-                    except:
-                        condYmin = True
-                    try:
-                        if Eta.Y[1+i+eddy_location[1]].values == Eta.Y[-1].values:
-                            pass
-                    except:
-                        condYmax = True
-                    if condYmax and condYmin:
-                        continue
                     
 
                 try:
@@ -321,9 +387,7 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
                 # Test conditions if extent is reached
                 if change_max < 0 and condYmax == False:
                     condYmax = eddy_location[0] + i + 1
-                    print(change_max)
                 if change_min < 0 and condYmin == False:
-                    print(change_min)
                     condYmin = eddy_location[0] - i - 1
                 
             if condYmax==False or condYmin==False:
@@ -334,15 +398,13 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
         
         elif cold:
             for i in range(0,47): # 47*2km radius
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                    if -1-i+eddy_location[0] < 0:
+                        condYmin = True
+                    if 1+i+eddy_location[0] > 46:
+                        condYmax = True
                 if condYmax and condYmin:
                     continue
-                if Eta.Y[-1-i+eddy_location[0]].values == 72.004763 or Eta.Y[1+i+eddy_location[1]].values == 72.995613:
-                    if Eta.Y[-1-i+eddy_location[0]].values == 72.004763:
-                        condYmin = True
-                    if Eta.Y[1+i+eddy_location[1]].values == 72.995613:
-                        condYmax = True
-                    if condYmax and condYmin:
-                        continue
 
                 try:
                     min_Y = eta[eddy_location[0]-i][eddy_location[1]]
@@ -377,70 +439,184 @@ def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False)
             return X_axis
 
 
-    def area_of_inner_eddy(threshold=float(),domainX=list(),domainY=list(),warm=False,cold=False):
+    def area_of_inner_eddy(threshold=float(),domainX=list(),domainY=list(),warm=False,cold=False,eddies=eddies):
         if warm:
             # Search domain error fix, sets to max extent of grid, if not, uses found domain
             if domainX == [0,0]:
                 Xrange = np.arange(len(Eta.X))
             else:
-                Xrange = np.arange(domainX)
+                Xrange = np.arange(domainX[0],domainX[1])
             if domainY == [0,0]:
                 Yrange = np.arange(len(Eta.Y))
             else:
-                Yrange = np.arange(domainY)
+                Yrange = np.arange(domainY[0],domainY[1])
 
             # Changing values in eddies dataset for inner region
             for j in Yrange:
                 for i in Xrange:
-                    if eddies[j][i] < threshold or eddies[j][i] == 2: # value 1 indicates area of inner warm eddy, add more for other layers
+                    if eta[j][i] < threshold or eddies[j][i] == 2: # value 1 indicates area of inner warm eddy, add more for other layers
                         continue
                     eddies[j][i] = 1
+            
+            # Check for outliers
+            test = eddies
+            for j in Yrange:
+                for i in Xrange:
+                    if eddies[j][i] != 1: # value 1 indicates area of inner warm eddy, add more for other layers
+                        continue
+                    if eddies[j][i-1] !=1 and eddies[j][i+1] !=1:
+                        test[j][i] = 0
+                    if eddies[j-1][i] !=1 and eddies[j+1][i] !=1:
+                        test[j][i] = 0
+            eddies = test
 
-        elif cold:
+        if cold:
             # Search domain error fix, sets to max extent of grid, if not, uses found domain
             if domainX == [0,0]:
                 Xrange = np.arange(len(eta.X))
             else:
-                Xrange = np.arange(domainX)
+                Xrange = np.arange(domainX[0],domainX[1])
             if domainY == [0,0]:
-                Yrange = np.arange(len(eta.Y))
+                Yrange = np.arange(len(Eta.Y))
             else:
-                Yrange = np.arange(domainY)
+                Yrange = np.arange(domainY[0],domainY[1])
 
             # Changing values in eddies dataset for inner region
             for j in Yrange:
                 for i in Xrange:
-                    if eddies[j][i] > threshold or eddies[j][i] == 1: # value 2 indicates area of inner eddy, add more for other layers
+                    if eta[j][i] > threshold or eddies[j][i] == 1: # value 2 indicates area of inner eddy, add more for other layers
                         continue
                     eddies[j][i] = 2
+            
+            # Check for outliers
+            test = eddies
+            for j in Yrange:
+                for i in Xrange:
+                    if eddies[j][i] != 2: # value 2 indicates area of inner cold eddy, add more for other layers
+                        continue
+                    if eddies[j][i-1] !=2 and eddies[j][i+1] !=2:
+                        test[j][i] = 0
+                    if eddies[j-1][i] !=2 and eddies[j+1][i] !=2:
+                        test[j][i] = 0
+            eddies = test
+        
+        return eddies
+
 
     if warm:
+        # Computes domain of eddy
         domainX = pos_X_search(eddy_center,warm=True)
         domainY = pos_Y_search(eddy_center,warm=True)
         domainXY = pos_XY_search(eddy_center,warm=True)
-        print('Domain of eddy: ',[domainX,domainY])
-        print('Domain of eddy XY: ', domainXY)
+        # print('Domain of eddy: ',[domainX,domainY])
+        # print('Domain of eddy XY: ', domainXY)
 
         totDomain = [[],[]]
-        if domainX[0]:
+        if domainX[0] != 0 and not isinstance(domainX[0], bool):
             totDomain[0].append(domainX[0])
-        if domainX[1]:
+        if domainX[1] != 0 and not isinstance(domainX[1], bool):
             totDomain[0].append(domainX[1])
-        if domainY[0]:
+        if domainY[0] != 0 and not isinstance(domainY[0], bool):
             totDomain[1].append(domainY[0])
-        if domainY[1]:
+        if domainY[1] != 0 and not isinstance(domainY[1], bool):
             totDomain.append(domainY[1])
         for i in domainXY:
-            if i[0]:
-                totDomain[0].append(i[0])
-            if i[1]:
+            try:
+                if i[0] != 0 and not isinstance(i[0], bool):
+                    totDomain[0].append(i[0])
+            except:
+                continue
+            if i[1] != 0 and not isinstance(i[1], bool):
                 totDomain[1].append(i[1])
-
-        print('TotDomain: ',[np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])])
         
-    elif cold:
+        # Find the maximum eta value all boundaries to use as threshold
+        max_eta_boundary_coord = []
+        max_eta_boundary_value = []
+        for j in totDomain[1]:
+            for i in totDomain[0]:
+                max_eta_boundary_coord.append([i,j])
+        if domainX[0] != 0 and not isinstance(domainX[0], bool):
+            max_eta_boundary_coord.append([domainX[0],eddy_center[0]])
+        if domainX[1] != 0 and not isinstance(domainX[1], bool):
+            max_eta_boundary_coord.append([domainX[1],eddy_center[0]])
+        if domainY[0] != 0 and not isinstance(domainY[0], bool):    
+            max_eta_boundary_coord.append([eddy_center[1],domainY[0]])
+        if domainY[1] != 0 and not isinstance(domainY[1], bool):
+            max_eta_boundary_coord.append([eddy_center[1],domainY[1]])
+        
+        for i in max_eta_boundary_coord:
+            try:
+                max_eta_boundary_value.append(eta[i[1]][i[0]])
+            except:
+                continue
+        try:
+            threshold = np.max(max_eta_boundary_value)
+
+            try:
+                totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
+                dataset = area_of_inner_eddy(threshold=threshold,domainX=[totDomain[0][0],totDomain[0][1]],domainY=[totDomain[1][0],totDomain[1][1]],warm=True,eddies=eddies)
+            except:
+                dataset = area_of_inner_eddy(threshold=threshold,domainX=[0,0],domainY=[0,0],warm=True,eddies=eddies)
+        except:
+            print('Error in eddy: ',eddy_center,' Skiped')
+
+        
+    if cold:
         domainX = pos_X_search(eddy_center,cold=True)
         domainY = pos_Y_search(eddy_center,cold=True)
         domainXY = pos_XY_search(eddy_center,cold=True)
-        print('Domain of eddy: ',[domainX,domainY])
-        print('Domain of eddy XY: ', domainXY)
+        # print('Domain of eddy: ',[domainX,domainY])
+        # print('Domain of eddy XY: ', domainXY)
+
+        totDomain = [[],[]]
+        if domainX[0] != 0 and not isinstance(domainX[0], bool):
+            totDomain[0].append(domainX[0])
+        if domainX[1] != 0 and not isinstance(domainX[1], bool):
+            totDomain[0].append(domainX[1])
+        if domainY[0] != 0 and not isinstance(domainY[0], bool):
+            totDomain[1].append(domainY[0])
+        if domainY[1] != 0 and not isinstance(domainY[1], bool):
+            totDomain.append(domainY[1])
+        for i in domainXY:
+            try:
+                if i[0] != 0 and not isinstance(i[0], bool):
+                    totDomain[0].append(i[0])
+            except:
+                continue
+            if i[1] != 0 and not isinstance(i[1], bool):
+                totDomain[1].append(i[1])
+        
+        # Find the minimum eta value all boundaries to use as threshold
+        min_eta_boundary_coord = []
+        min_eta_boundary_value = []
+        for j in totDomain[1]:
+            for i in totDomain[0]:
+                min_eta_boundary_coord.append([i,j])
+        if domainX[0] != 0 and not isinstance(domainX[0], bool):
+            min_eta_boundary_coord.append([domainX[0],eddy_center[0]])
+        if domainX[1] != 0 and not isinstance(domainX[1], bool):
+            min_eta_boundary_coord.append([domainX[1],eddy_center[0]])
+        if domainY[0] != 0 and not isinstance(domainY[0], bool):    
+            min_eta_boundary_coord.append([eddy_center[1],domainY[0]])
+        if domainY[1] != 0 and not isinstance(domainY[1], bool):
+            min_eta_boundary_coord.append([eddy_center[1],domainY[1]])
+        
+        for i in min_eta_boundary_coord:
+            try:
+                min_eta_boundary_value.append(eta[i[1]][i[0]])
+            except:
+                continue
+        try:
+            threshold = np.min(min_eta_boundary_value)
+            try:
+                totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
+                dataset = area_of_inner_eddy(threshold=threshold,domainX=[totDomain[0][0],totDomain[0][1]],domainY=[totDomain[1][0],totDomain[1][1]],cold=True,eddies=eddies)
+            except:
+                dataset = area_of_inner_eddy(threshold=threshold,domainX=[0,0],domainY=[0,0],cold=True,eddies=eddies)
+        except:
+            print('Error in eddy: ',eddy_center,' Skiped')
+    
+    try:
+        return dataset
+    except:
+        return eddies
