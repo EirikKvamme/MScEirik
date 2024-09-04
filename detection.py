@@ -56,8 +56,7 @@ def eddyDetection(SSH,Okubo_Weiss): # Test if area has negative Okubo-Weiss para
     return max_coord, min_coord
 
 
-
-def resolution(X,Y):
+def resolution(X,Y): # Not in use!
     """
     DO NOT USE!!!\n
     Not correct!!!
@@ -87,6 +86,7 @@ def resolution(X,Y):
         grid.append(pos_dist_min)
 
     return grid
+
 
 def inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=False,eddiesDataset=None,use_eddyDataset=False):
     """
