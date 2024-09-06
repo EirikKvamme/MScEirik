@@ -680,6 +680,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 
         
             if condXmax==False or condXmin==False:
+                pass
                 print('Error in X domain: No change in eta detected. To low extent etc')
             X_axis = [condXmin,condXmax]
                         
@@ -723,6 +724,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 
         
             if condXmax==False or condXmin==False:
+                pass
                 print('Error in X domain: No change in eta detected. To low extent etc')
             X_axis = [condXmin,condXmax]
                         
@@ -800,6 +802,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 
         
             if condXmax==False or condXmin==False or condYmin==False or condYmax==False:
+                pass
                 print('Error in XY domain: No change in eta detected. To low extent etc')
             Axis = [condXmin,condXmax,condYmin,condYmax]
                         
@@ -872,6 +875,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 
         
             if condXmax==False or condXmin==False or condYmin==False or condYmax==False:
+                pass
                 print('Error in XY domain: No change in eta detected. To low extent etc')
             Axis = [condXmin,condXmax,condYmin,condYmax]
                         
@@ -923,6 +927,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                     condYmin = eddy_location[0] - i - 1
                 
             if condYmax==False or condYmin==False:
+                pass
                 print('Error in Y domain: No change in eta detected. To low extent etc')
             X_axis = [condYmin,condYmax]
                         
@@ -965,6 +970,7 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                     condYmin = eddy_location[0] - i - 1
         
             if condYmax==False or condYmin==False:
+                pass
                 print('Error in Y domain: No change in eta detected. To low extent etc')
             X_axis = [condYmin,condYmax]
                         
@@ -996,9 +1002,9 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 for i in Xrange:
                     if eddies[j][i] != 1: # value 1 indicates area of inner warm eddy, add more for other layers
                         continue
-                    if eddies[j][i-1] !=1 and eddies[j][i+1] !=1:
+                    if eddies[j][i-1] !=1 and eddies[j][i+1] !=1 and eddies[j][i-2] !=1 and eddies[j][i+2] !=1:
                         test[j][i] = 0
-                    if eddies[j-1][i] !=1 and eddies[j+1][i] !=1:
+                    if eddies[j-1][i] !=1 and eddies[j+1][i] !=1 and eddies[j-2][i] !=1 and eddies[j+2][i] !=1:
                         test[j][i] = 0
             eddies = test
 
@@ -1026,9 +1032,9 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 for i in Xrange:
                     if eddies[j][i] != 2: # value 2 indicates area of inner cold eddy, add more for other layers
                         continue
-                    if eddies[j][i-1] !=2 and eddies[j][i+1] !=2:
+                    if eddies[j][i-1] !=2 and eddies[j][i+1] !=2 and eddies[j][i-2] !=2 and eddies[j][i+2] !=2:
                         test[j][i] = 0
-                    if eddies[j-1][i] !=2 and eddies[j+1][i] !=2:
+                    if eddies[j-1][i] !=2 and eddies[j+1][i] !=2 and eddies[j-2][i] !=2 and eddies[j+2][i] !=2:
                         test[j][i] = 0
             eddies = test
         
