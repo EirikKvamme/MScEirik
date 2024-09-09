@@ -9,7 +9,7 @@ from IPython.display import Video
 from PIL import Image
 
 
-def animation_local_gif(data=xr.DataArray, name=str(), unit=str(),depth=xr.DataArray,vmin=None,vmax=None,cmap=None):
+def animation_local_gif(data=xr.DataArray, name=str(), unit=str(),depth=xr.DataArray,vmin=None,vmax=None,cmap=None,interval=200):
     """
     Data cannot contain Z coords!
     """
@@ -58,11 +58,10 @@ def animation_local_gif(data=xr.DataArray, name=str(), unit=str(),depth=xr.DataA
         ax1.pcolor(data.X, data.Y, data[frame], cmap=cmap, norm=norm)
         pbar.update(1)
 
-    ani = FuncAnimation(fig, update_plot, frames=T, interval=200)
-    ani.save(f'{name}.mp4', writer='ffmpeg', progress_callback=lambda i, n: pbar.update(1))
+    ani = FuncAnimation(fig, update_plot, frames=T, interval=interval)
+    ani.save(f'{name}.gif', writer='pillow', progress_callback=lambda i, n: pbar.update(1))
     pbar.close()
     plt.close(fig)
-    display(Video(f'{name}.mp4'))
 
 
 def animation_local_mp4(data=xr.DataArray, name=str(), unit=str(),depth=xr.DataArray,vmin=None,vmax=None,cmap=None):
