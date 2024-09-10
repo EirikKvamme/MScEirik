@@ -1696,3 +1696,28 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
         return dataset
     except:
         return eddies
+
+
+def outer_eddy_region(hor_vel,eddiesDataset):
+    """
+    Detection of stream and current area around eddies.
+    """
+    data = eddiesDataset.copy()
+
+    # Thresholds
+    current = 0.5 # m/s and greater
+    T = len(eddiesDataset.Y)
+    pbar = tqdm(total=T, desc="Running outer region algorythm")
+
+    for j in range(len(eddiesDataset.Y)):
+        pbar.update(1)
+        for i in range(len(eddiesDataset.X)):
+            if data[j][i] == 0:
+                if hor_vel[j][i].values >= current:
+                    data[j,i] = 3
+                elif i>=10 and i<=len(eddiesDataset.X)-10 and j>=10 and j<=len(eddiesDataset.Y)-10 and hor_vel[j][i].values > 0.2 and hor_vel[j][i] < current and eddiesDataset[j-10:j+10,i-10:i+10].max()>0:
+                    data[j,i] = 4
+
+    pbar.close()
+    # print('Test of max value: ',data.max())
+    return data
