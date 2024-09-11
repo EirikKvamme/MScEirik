@@ -1211,9 +1211,9 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
                 # Test conditions if extent is reached
                 if change_max < 0 and condXmax == False:
-                    condXmax = eddy_location[1] + i + 1
+                    condXmax = eddy_location[1] + i
                 if change_min < 0 and condXmin == False:
-                    condXmin = eddy_location[1] - i - 1
+                    condXmin = eddy_location[1] - i
                 
                 
         
@@ -1256,9 +1256,9 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
                 # Test conditions if extent is reached
                 if change_max > 0 and condXmax == False:
-                    condXmax = eddy_location[1] + i + 1
+                    condXmax = eddy_location[1] + i
                 if change_min > 0 and condXmin == False:
-                    condXmin = eddy_location[1] - i - 1
+                    condXmin = eddy_location[1] - i
                 
         
             if condXmax==False or condXmin==False:
@@ -1329,13 +1329,13 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
                 # Test conditions if extent is reached
                 if change_maxX < 0 and condXmax == False:
-                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i+1]
+                    condXmax = [eddy_location[1]+i,eddy_location[0]+i]
                 if change_minX < 0 and condXmin == False:
-                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i-1]
+                    condXmin = [eddy_location[1]-i,eddy_location[0]-i]
                 if change_minY < 0 and condYmin == False:
-                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i+1]
+                    condYmin = [eddy_location[1]-i,eddy_location[0]+i]
                 if change_maxY < 0 and condYmax == False:
-                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i-1]
+                    condYmax = [eddy_location[1]+i,eddy_location[0]-i]
                 
                 
         
@@ -1402,13 +1402,13 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
                 # Test conditions if extent is reached
                 if change_maxX > 0 and condXmax == False:
-                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i+1]
+                    condXmax = [eddy_location[1]+i,eddy_location[0]+i]
                 if change_minX > 0 and condXmin == False:
-                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i-1]
+                    condXmin = [eddy_location[1]-i,eddy_location[0]-i]
                 if change_minY > 0 and condYmin == False:
-                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i+1]
+                    condYmin = [eddy_location[1]-i,eddy_location[0]+i]
                 if change_maxY > 0 and condYmax == False:
-                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i-1]
+                    condYmax = [eddy_location[1]+i,eddy_location[0]-i]
                 
                 
         
@@ -1460,9 +1460,9 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
                 
                 # Test conditions if extent is reached
                 if change_max < 0 and condYmax == False:
-                    condYmax = eddy_location[0] + i + 1
+                    condYmax = eddy_location[0] + i
                 if change_min < 0 and condYmin == False:
-                    condYmin = eddy_location[0] - i - 1
+                    condYmin = eddy_location[0] - i
                 
             if condYmax==False or condYmin==False:
                 pass
@@ -1503,9 +1503,9 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
                 # Test conditions if extent is reached
                 if change_max > 0 and condYmax == False:
-                    condYmax = eddy_location[0] + i + 1
+                    condYmax = eddy_location[0] + i
                 elif change_min > 0 and condYmin == False:
-                    condYmin = eddy_location[0] - i - 1
+                    condYmin = eddy_location[0] - i
         
             if condYmax==False or condYmin==False:
                 pass
@@ -1626,7 +1626,7 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
             except:
                 continue
         try:
-            threshold = np.max(max_eta_boundary_value)
+            threshold = np.max(max_eta_boundary_value) + 0.01 # Add 1cm to reduce area of eddy
 
             try:
                 totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
@@ -1683,7 +1683,7 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
             except:
                 continue
         try:
-            threshold = np.min(min_eta_boundary_value)
+            threshold = np.min(min_eta_boundary_value) - 0.01 # Add 1cm to reduce area of eddy
             try:
                 totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
                 dataset = area_of_inner_eddy(threshold=threshold,domainX=[totDomain[0][0],totDomain[0][1]],domainY=[totDomain[1][0],totDomain[1][1]],cold=True,eddies=eddies)
