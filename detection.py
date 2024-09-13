@@ -673,9 +673,9 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
 
                 # Test conditions if extent is reached
                 if change_max < 0 and condXmax == False:
-                    condXmax = eddy_location[1] + i + 1
+                    condXmax = eddy_location[1] + i
                 if change_min < 0 and condXmin == False:
-                    condXmin = eddy_location[1] - i - 1
+                    condXmin = eddy_location[1] - i
                 
                 
         
@@ -791,13 +791,13 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
 
                 # Test conditions if extent is reached
                 if change_maxX < 0 and condXmax == False:
-                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i+1]
+                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i]
                 if change_minX < 0 and condXmin == False:
-                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i-1]
+                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i]
                 if change_minY < 0 and condYmin == False:
-                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i+1]
+                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i]
                 if change_maxY < 0 and condYmax == False:
-                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i-1]
+                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i]
                 
                 
         
@@ -864,13 +864,13 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
 
                 # Test conditions if extent is reached
                 if change_maxX > 0 and condXmax == False:
-                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i+1]
+                    condXmax = [eddy_location[1]+i+1,eddy_location[0]+i]
                 if change_minX > 0 and condXmin == False:
-                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i-1]
+                    condXmin = [eddy_location[1]-i-1,eddy_location[0]-i]
                 if change_minY > 0 and condYmin == False:
-                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i+1]
+                    condYmin = [eddy_location[1]-i-1,eddy_location[0]+i]
                 if change_maxY > 0 and condYmax == False:
-                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i-1]
+                    condYmax = [eddy_location[1]+i+1,eddy_location[0]-i]
                 
                 
         
@@ -922,9 +922,9 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
                 
                 # Test conditions if extent is reached
                 if change_max < 0 and condYmax == False:
-                    condYmax = eddy_location[0] + i + 1
+                    condYmax = eddy_location[0] + i
                 if change_min < 0 and condYmin == False:
-                    condYmin = eddy_location[0] - i - 1
+                    condYmin = eddy_location[0] - i
                 
             if condYmax==False or condYmin==False:
                 pass
@@ -965,9 +965,9 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
 
                 # Test conditions if extent is reached
                 if change_max > 0 and condYmax == False:
-                    condYmax = eddy_location[0] + i + 1
+                    condYmax = eddy_location[0] + i
                 elif change_min > 0 and condYmin == False:
-                    condYmin = eddy_location[0] - i - 1
+                    condYmin = eddy_location[0] - i
         
             if condYmax==False or condYmin==False:
                 pass
@@ -1182,10 +1182,10 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
         if warm:
             for i in range(0,100): # 100*2km radius
                 # Test is extent is found and stop for loop
-                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(Eta.X)-1:
                     if -1-i+eddy_location[1] < 0:
                         condXmin = True
-                    if 1+i+eddy_location[1] > 434:
+                    if 1+i+eddy_location[1] > len(Eta.X)-1:
                         condXmax = True
                 if condXmax and condXmin:
                     continue
@@ -1227,10 +1227,10 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
         elif cold:
             for i in range(0,100): # 100*2km radius
                 # Test is extent is found and stop for loop
-                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(Eta.X)-1:
                     if -1-i+eddy_location[1] < 0:
                         condXmin = True
-                    if 1+i+eddy_location[1] > 434:
+                    if 1+i+eddy_location[1] > len(Eta.X)-1:
                         condXmax = True
                 if condXmax and condXmin:
                     continue
@@ -1277,15 +1277,15 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
         if warm:
             for i in range(0,47): # 100*2km radius
                 # Test is extent is found and stop for loop
-                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(Eta.X)-1:
                     if -1-i+eddy_location[1] < 0:
                         condXmin = True
-                    if 1+i+eddy_location[1] > 434:
+                    if 1+i+eddy_location[1] > len(Eta.X)-1:
                         condXmax = True
-                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > len(Eta.Y)-1:
                     if -1-i+eddy_location[0] < 0:
                         condYmin = True
-                    if 1+i+eddy_location[0] > 46:
+                    if 1+i+eddy_location[0] > len(Eta.Y)-1:
                         condYmax = True
 
                 if condXmax and condXmin and condYmax and condYmin:
@@ -1350,15 +1350,15 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
             for i in range(0,47): # 100*2km radius
                 # Test is extent is found and stop for loop
                 # Test is extent is found and stop for loop
-                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > 434:
+                if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(Eta.X)-1:
                     if -1-i+eddy_location[1] < 0:
                         condXmin = True
-                    if 1+i+eddy_location[1] > 434:
+                    if 1+i+eddy_location[1] > len(Eta.X)-1:
                         condXmax = True
-                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > len(Eta.Y)-1:
                     if -1-i+eddy_location[0] < 0:
                         condYmin = True
-                    if 1+i+eddy_location[0] > 46:
+                    if 1+i+eddy_location[0] > len(Eta.Y)-1:
                         condYmax = True
 
                 if condXmax and condXmin and condYmax and condYmin:
@@ -1426,10 +1426,10 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
         if warm:
             for i in range(0,47): # 47*2km radius
                 # Test is extent is found and stop for loop
-                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > 46:
+                if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > len(Eta.Y)-1:
                     if -1-i+eddy_location[0] < 0:
                         condYmin = True
-                    if 1+i+eddy_location[0] > 46:
+                    if 1+i+eddy_location[0] > len(Eta.Y)-1:
                         condYmax = True
                 if condYmax and condYmin:
                     continue
@@ -1626,7 +1626,7 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
             except:
                 continue
         try:
-            threshold = np.max(max_eta_boundary_value) + 0.01 # Add 1cm to reduce area of eddy
+            threshold = np.max(max_eta_boundary_value)
 
             try:
                 totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
@@ -1683,7 +1683,7 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
             except:
                 continue
         try:
-            threshold = np.min(min_eta_boundary_value) - 0.01 # Add 1cm to reduce area of eddy
+            threshold = np.min(min_eta_boundary_value)
             try:
                 totDomain = [np.min(totDomain[0]),np.max(totDomain[0])],[np.min(totDomain[1]),np.max(totDomain[1])]
                 dataset = area_of_inner_eddy(threshold=threshold,domainX=[totDomain[0][0],totDomain[0][1]],domainY=[totDomain[1][0],totDomain[1][1]],cold=True,eddies=eddies)
@@ -1721,3 +1721,187 @@ def outer_eddy_region(hor_vel,eddiesDataset):
     pbar.close()
     # print('Test of max value: ',data.max())
     return data
+
+
+def newEddyMethod(eddy_center=list,OW=xr.DataArray,hor_vel=xr.DataArray,eddiesDataset=xr.DataArray,warm=False,cold=False):
+    """
+    Using the eddy search algorythm based on Matsuoka et al. 2016
+    """
+    # Transform eddy centerpoints from coords to index position from eta array
+    eddy_center = [np.argwhere(OW.Y.values == eddy_center[0])[0][0],np.argwhere(OW.X.values == eddy_center[1])[0][0]]
+    eddies = eddiesDataset
+
+
+    def pos_X_search(eddy_location=list()):
+        condXmax = 0
+        condXmin = 0
+
+        for i in range(0,100): # 100*2km radius
+            # Test is extent is found and stop for loop
+            if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(OW.X)-1:
+                if -1-i+eddy_location[1] < 0:
+                    condXmin = True
+                if 1+i+eddy_location[1] > len(OW.X)-1:
+                    condXmax = True
+            if condXmax and condXmin:
+                break
+            
+            max_extent = OW[eddy_location[0],eddy_location[1]+i+1]
+            min_extent = OW[eddy_location[0],eddy_location[1]-i-1]
+
+            # Test conditions if extent is reached
+            if max_extent >= 0 and condXmax == False:
+                condXmax = eddy_location[1] + i
+            if min_extent >= 0 and condXmin == False:
+                condXmin = eddy_location[1] - i
+    
+        if condXmax==False or condXmin==False:
+            print('Error in X domain: No change in Okubo-Weiss detected. To low extent etc')
+        X_axis = [condXmin,condXmax]
+                    
+        return X_axis
+
+
+    def pos_XY_search(eddy_location=list()):
+        condXmax = 0
+        condXmin = 0
+        condYmax = 0
+        condYmin = 0
+        
+        for i in range(0,100): # 100*2km radius
+            # Test is extent is found and stop for loop
+            if -1-i+eddy_location[1] < 0 or 1+i+eddy_location[1] > len(OW.X)-1:
+                if -1-i+eddy_location[1] < 0:
+                    condXmin = True
+                if 1+i+eddy_location[1] > len(OW.X)-1:
+                    condXmax = True
+            if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > len(OW.Y)-1:
+                if -1-i+eddy_location[0] < 0:
+                    condYmin = True
+                if 1+i+eddy_location[0] > len(OW.Y)-1:
+                    condYmax = True
+
+            if condXmax and condXmin and condYmax and condYmin:
+                break
+
+
+            max_X_extent = OW[eddy_location[0]+i+1,eddy_location[1]+i+1]
+            min_X_extent = OW[eddy_location[0]-i-1,eddy_location[1]+i+1]
+            max_Y_extent = OW[eddy_location[0]+i+1,eddy_location[1]-i-1]
+            min_Y_extent = OW[eddy_location[0]-i-1,eddy_location[1]-i-1]
+
+
+            # Test conditions if extent is reached
+            if max_X_extent >= 0 and condXmax == False:
+                condXmax = [eddy_location[1]+i,eddy_location[0]+i]
+            if min_X_extent >= 0 and condXmin == False:
+                condXmin = [eddy_location[1]-i,eddy_location[0]+i]
+            if min_Y_extent >= 0 and condYmin == False:
+                condYmin = [eddy_location[1]-i,eddy_location[0]-i]
+            if max_Y_extent >= 0 and condYmax == False:
+                condYmax = [eddy_location[1]+i,eddy_location[0]-i]
+            
+            
+    
+        if condXmax==False or condXmin==False or condYmin==False or condYmax==False:
+            pass
+            print('Error in XY domain: No change in eta detected. To low extent etc')
+        Axis = [condXmin,condXmax,condYmin,condYmax]
+                    
+        return Axis
+
+
+    def pos_Y_search(eddy_location=list()):
+        condYmax = 0
+        condYmin = 0
+        for i in range(0,100): # 100*2km radius
+            # Test is extent is found and stop for loop
+            if -1-i+eddy_location[0] < 0 or 1+i+eddy_location[0] > len(OW.Y)-1:
+                if -1-i+eddy_location[0] < 0:
+                    condYmin = True
+                if 1+i+eddy_location[0] > len(OW.Y)-1:
+                    condYmax = True
+            if condYmax and condYmin:
+                continue
+                
+            max_Y = OW[eddy_location[0]+i+1,eddy_location[1]]
+            min_Y = OW[eddy_location[0]-i-1,eddy_location[1]]
+            
+            # Test conditions if extent is reached
+            if max_Y >= 0 and condYmax == False:
+                condYmax = eddy_location[0] + i
+            if min_Y >= 0 and condYmin == False:
+                condYmin = eddy_location[0] - i
+            
+        if condYmax==False or condYmin==False:
+            pass
+            print('Error in Y domain: No change in eta detected. To low extent etc')
+        X_axis = [condYmin,condYmax]
+                    
+        return X_axis
+
+
+    def inner_domain(center=eddy_center,domain=list,warm=False,cold=False,eddies=eddies):
+        domain_search = int(np.max([np.max(domain[0])-np.min(domain[0]),np.max(domain[1])-np.min(domain[1])]))
+        
+        if warm:
+            # Find areas with OW < 0 for each step outwards from the center
+            for x in range(domain_search):
+                OW_test = OW[center[0]-x:center[0]+x,center[1]-x:center[1]+x]
+                criteria = OW_test >= 0
+                eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x] = eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x].where(criteria, other=1)
+                # Possibly need some sort of check if new points are found
+
+            return eddies
+        
+        elif cold:
+            # Find areas with OW < 0 for each step outwards from the center
+            for x in range(domain_search):
+                OW_test = OW[center[0]-x:center[0]+x,center[1]-x:center[1]+x]
+                criteria = OW_test >= 0
+                eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x] = eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x].where(criteria, other=2)
+                # Possibly need some sort of check if new points are found
+
+            return eddies
+
+
+    def outer_domain(hor_vel=hor_vel):
+        pass
+
+
+    def currents(hor_vel=hor_vel):
+        pass
+
+
+    domainX = pos_X_search(eddy_center)
+    domainY = pos_Y_search(eddy_center)
+    domainXY = pos_XY_search(eddy_center)
+    # print('Domain of eddy: ',[domainX,domainY])
+    # print('Domain of eddy XY: ', domainXY)
+
+    totDomain = [[],[]]
+    if domainX[0] != 0 and not isinstance(domainX[0], bool):
+        totDomain[0].append(domainX[0])
+    if domainX[1] != 0 and not isinstance(domainX[1], bool):
+        totDomain[0].append(domainX[1])
+    if domainY[0] != 0 and not isinstance(domainY[0], bool):
+        totDomain[1].append(domainY[0])
+    if domainY[1] != 0 and not isinstance(domainY[1], bool):
+        totDomain.append(domainY[1])
+    for i in domainXY:
+        try:
+            if i[0] != 0 and not isinstance(i[0], bool):
+                totDomain[0].append(i[0])
+        except:
+            continue
+        if i[1] != 0 and not isinstance(i[1], bool):
+            totDomain[1].append(i[1])
+
+    if warm:
+        eddies = inner_domain(center=eddy_center,domain=totDomain,warm=True,eddies=eddies)
+
+    elif cold:
+        eddies = inner_domain(center=eddy_center,domain=totDomain,cold=True,eddies=eddies)
+
+    return eddies
+
