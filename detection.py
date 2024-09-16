@@ -1846,21 +1846,114 @@ def newEddyMethod(eddy_center=list,OW=xr.DataArray,hor_vel=xr.DataArray,eddiesDa
         
         if warm:
             # Find areas with OW < 0 for each step outwards from the center
-            for x in range(domain_search):
-                OW_test = OW[center[0]-x:center[0]+x,center[1]-x:center[1]+x]
-                criteria = OW_test >= 0
-                eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x] = eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x].where(criteria, other=1)
-                # Possibly need some sort of check if new points are found
 
+            # Reached limit conditions
+            Xpos = True
+            Xneg = True
+            Ypos = True
+            Yneg = True
+            X = center[1]
+            Y = center[0]
+            eddies[Y,X] = 1
+            for i in range(1,domain_search):
+                if Xpos==False and Xneg==False and Ypos==False and Yneg==False:
+                    break
+
+                # X-Positive
+                if Xpos:
+                    OW_test = OW[Y-(i-1):Y+(i),X+i]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-(i-1):Y+(i),X+i] = eddies[Y-(i-1):Y+(i),X+i].where(criteria,other=1)
+                    if eddies[Y-(i-1):Y+(i),X+i].max() != 1:
+                        Xpos = False
+                # X-Negative
+                if Xneg:
+                    OW_test = OW[Y-(i-1):Y+(i),X-i]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-(i-1):Y+(i),X-i] = eddies[Y-(i-1):Y+(i),X-i].where(criteria,other=1)
+                    if eddies[Y-(i-1):Y+(i),X-i].max() != 1:
+                        Xneg = False
+                # Y-Positive
+                if Ypos:
+                    OW_test = OW[Y+i,X-i:X+i+1]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y+i,X-i:X+i+1] = eddies[Y+i,X-i:X+i+1].where(criteria, other=1)
+                    if eddies[Y+i,X-i:X+i+1].max() != 1:
+                        Ypos = False
+                # Y-Negative
+                if Yneg:
+                    OW_test = OW[Y-i,X-i:X+i+1]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-i,X-i:X+i+1] = eddies[Y-i,X-i:X+i+1].where(criteria, other=1)
+                    if eddies[Y-i,X-i:X+i+1].max() != 1:
+                        Yneg = False
+            
+            # # Filter out outliers
+            # data = eddies
+            # cleaned = eddies
+            # for j in range(domain_search-Y,domain_search+Y+1):
+            #     for i in range(domain_search-X,domain_search+X+1):
+            #         if data[j,i] == 1:
+            #             if data[j,i+1] != 1 and data[j,i-1] != 1 and data[j-1,i] != 1 and data[j+1,i] !=1:
+            #                 cleaned[j,i] = 0 
+                            
+            # eddies = cleaned
             return eddies
         
         elif cold:
             # Find areas with OW < 0 for each step outwards from the center
-            for x in range(domain_search):
-                OW_test = OW[center[0]-x:center[0]+x,center[1]-x:center[1]+x]
-                criteria = OW_test >= 0
-                eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x] = eddies[center[0]-x:center[0]+x,center[1]-x:center[1]+x].where(criteria, other=2)
-                # Possibly need some sort of check if new points are found
+
+            # Reached limit conditions
+            Xpos = True
+            Xneg = True
+            Ypos = True
+            Yneg = True
+            X = center[1]
+            Y = center[0]
+            eddies[Y,X] = 2
+            for i in range(1,domain_search):
+                if Xpos==False and Xneg==False and Ypos==False and Yneg==False:
+                    break
+
+                # X-Positive
+                if Xpos:
+                    OW_test = OW[Y-(i-1):Y+(i),X+i]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-(i-1):Y+(i),X+i] = eddies[Y-(i-1):Y+(i),X+i].where(criteria,other=2)
+                    if eddies[Y-(i-1):Y+(i),X+i].max() != 2:
+                        Xpos = False
+                # X-Negative
+                if Xneg:
+                    OW_test = OW[Y-(i-1):Y+(i),X-i]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-(i-1):Y+(i),X-i] = eddies[Y-(i-1):Y+(i),X-i].where(criteria,other=2)
+                    if eddies[Y-(i-1):Y+(i),X-i].max() != 2:
+                        Xneg = False
+                # Y-Positive
+                if Ypos:
+                    OW_test = OW[Y+i,X-i:X+i+1]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y+i,X-i:X+i+1] = eddies[Y+i,X-i:X+i+1].where(criteria, other=2)
+                    if eddies[Y+i,X-i:X+i+1].max() != 2:
+                        Ypos = False
+                # Y-Negative
+                if Yneg:
+                    OW_test = OW[Y-i,X-i:X+i+1]
+                    criteria = (OW_test >= 0) | (OW_test.isnull())
+                    eddies[Y-i,X-i:X+i+1] = eddies[Y-i,X-i:X+i+1].where(criteria, other=2)
+                    if eddies[Y-i,X-i:X+i+1].max() != 2:
+                        Yneg = False
+            
+            # # Filter out outliers
+            # data = eddies
+            # cleaned = eddies
+            # for j in range(domain_search-Y,domain_search+Y+1):
+            #     for i in range(domain_search-X,domain_search+X+1):
+            #         if data[j,i] == 2:
+            #             if data[j,i+1] != 2 and data[j,i-1] != 2 and data[j-1,i] != 2 and data[j+1,i] !=2:
+            #                 cleaned[j,i] = 0 
+                            
+            # eddies = cleaned
 
             return eddies
 

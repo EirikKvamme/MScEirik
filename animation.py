@@ -6,7 +6,7 @@ from matplotlib.colors import Normalize
 from tqdm import tqdm
 import xarray as xr
 from IPython.display import Video
-from PIL import Image
+# from PIL import Image
 
 
 def animation_local_gif(data=xr.DataArray, name=str(), unit=str(),depth=xr.DataArray,vmin=None,vmax=None,cmap=None,interval=200):
@@ -173,3 +173,49 @@ def animation_local_3D(data, name, unit,depth,vmin,vmax,cmap):
     plt.close(fig)
     display(Image(f'{name}.gif'))
 
+
+def animate_eddies(eddies_full,hor_vel,fname):
+    # 1 = warm, 2 = cold, 3 = current, 4 = stream
+    import matplotlib.colors as mcolors
+    name = 'Eddies'
+    # Define the custom colormap
+    colors = ['red', 'blue', 'yellow', 'green']
+    cmap = mcolors.ListedColormap(colors)
+
+    # Define the normalization
+    bounds = [0.5, 1.5, 2.5, 3.5, 4.5]
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+
+    fig, ax = plt.subplots(figsize=(15,4),layout='constrained')
+    ax.set_title(f'{name} at t={eddies_full.time[0].values}')
+    ax.set_xlabel('Longitude [$^o$E]')
+    ax.set_ylabel('Latitude [$^o$N]')
+    mesh = ax.pcolormesh(hor_vel.X,hor_vel.Y,hor_vel[0],vmin=0,vmax=1.2,cmap='binary_r')
+    cbar = fig.colorbar(mesh)
+    cbar.set_label('Horizontal velocity magnitude [ms$^{-1}$]')
+    ax.pcolormesh(eddies_full.X,eddies_full.Y,eddies_full[0],cmap=cmap, norm=norm)
+    x = [-21,1,1,-21,-21]
+    y = [71,71,74,74,71]
+    ax.plot(x,y,color='orange',linestyle='--', label='Area off eddy centerpoint detection')
+    ax.legend()
+
+    T = len(eddies_full.time)
+    pbar = tqdm(total=T, desc="Generating Frames")
+    def update_plot(frame):
+        ax.clear()
+        ax.set_title(f'{name} at t={eddies_full.time[int(frame)].values}')
+        ax.set_xlabel('Longitude [$^o$E]')
+        ax.set_ylabel('Latitude [$^o$N]')
+        ax.pcolormesh(hor_vel.X,hor_vel.Y,hor_vel[frame],cmap='binary_r')
+        ax.pcolormesh(eddies_full.X, eddies_full.Y, eddies_full[frame], cmap=cmap, norm=norm)
+        x = [-21,1,1,-21,-21]
+        y = [71,71,74,74,71]
+        ax.plot(x,y,color='orange',linestyle='--', label='Area off eddy centerpoint detection')
+        ax.legend()
+        pbar.update(1)
+
+    ani = FuncAnimation(fig, update_plot, frames=T, interval=300)
+    ani.save(f'{fname}.gif', writer='pillow', progress_callback=lambda i, n: pbar.update(1))
+    pbar.close()
+    plt.close(fig)
+    display(Image(f'{fname}.gif'))
