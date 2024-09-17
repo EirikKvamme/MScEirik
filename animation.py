@@ -219,3 +219,38 @@ def animate_eddies(eddies_full,hor_vel,fname):
     pbar.close()
     plt.close(fig)
     display(Image(f'{fname}.gif'))
+
+def animate_eddies_prop(prop1=xr.Dataset,p1vmin=None,p1vmax=None,prop2=xr.Dataset,p2vmin=None,p2vmax=None,eddies=xr.Dataset,p1cbarName=str,p2cbarName=str,fname=str):
+    fig, (ax1,ax2) = plt.subplots(2,1,figsize=(14,8),layout='constrained')
+
+    mesh = ax1.pcolormesh(prop1.X,prop1.Y,prop1[0],vmin=p1vmin,vmax=p1vmax,cmap='seismic')
+    cbar = fig.colorbar(mesh)
+    cbar.set_label(p1cbarName)
+    ax1.contour(eddies.X,eddies.Y,eddies[0],colors='grey')
+
+    mesh = ax2.pcolormesh(prop2.X,prop2.Y,prop2[0],vmin=p2vmin,vmax=p2vmax,cmap='seismic')
+    cbar = fig.colorbar(mesh)
+    cbar.set_label(p2cbarName)
+    ax2.contour(eddies.X,eddies.Y,eddies[0],colors='grey')
+
+    ax1.set_title(f't={eddies.time[0].values}')
+
+    T = len(eddies.time)
+    pbar = tqdm(total=T, desc="Generating Frames")
+    def update_plot(frame):
+        ax1.clear()
+        ax2.clear()
+
+        ax1.set_title(f't={eddies.time[int(frame)].values}')
+        ax1.pcolormesh(prop1.X,prop1.Y,prop1[frame],vmin=p1vmin,vmax=p1vmax,cmap='seismic')
+        ax1.contour(eddies.X,eddies.Y,eddies[frame],colors='grey')
+
+        ax2.pcolormesh(prop2.X,prop2.Y,prop2[frame],vmin=p2vmin,vmax=p2vmax,cmap='seismic')
+        ax2.contour(eddies.X,eddies.Y,eddies[frame],colors='grey')
+        pbar.update(1)
+
+    ani = FuncAnimation(fig, update_plot, frames=T, interval=300)
+    ani.save(f'{fname}.gif', writer='pillow', progress_callback=lambda i, n: pbar.update(1))
+    pbar.close()
+    plt.close(fig)
+    display(Image(f'{fname}.gif'))
