@@ -24,7 +24,7 @@ def eddyDetection(SSH,Okubo_Weiss): # Test if area has negative Okubo-Weiss para
         pbar.update(1)
         for i in range(4, mxbndX + 1):
             count += 1
-            if Okubo_Weiss[j, i] >= std_OW:  # Boundary conditions 
+            if Okubo_Weiss[j, i] >= std_OW and Okubo_Weiss[j, i].isnull():  # Boundary conditions 
                 count_skip += 1
                 continue
             center = SSH[j][i]
@@ -981,11 +981,13 @@ def full_inner_eddy_region(eta=xr.DataArray,eddy_center=list(),warm=False,cold=F
         if warm:
             # Search domain error fix, sets to max extent of grid, if not, uses found domain
             if domainX == [0,0]:
-                Xrange = np.arange(len(Eta.X))
+                pass
+                # Xrange = np.arange(len(Eta.X))
             else:
                 Xrange = np.arange(domainX[0],domainX[1])
             if domainY == [0,0]:
-                Yrange = np.arange(len(Eta.Y))
+                pass
+                # Yrange = np.arange(len(Eta.Y))
             else:
                 Yrange = np.arange(domainY[0],domainY[1])
 
@@ -1191,10 +1193,14 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
                     continue
                 
                 try:
+                    if np.isnan(eta[eddy_location[0]][eddy_location[1]-i]):
+                        condXmin = True
                     min_X = eta[eddy_location[0]][eddy_location[1]-i]
                 except:
                     pass
                 try:
+                    if np.isnan(eta[eddy_location[0]][eddy_location[1]+i]):
+                        condXmax = True
                     max_X = eta[eddy_location[0]][eddy_location[1]+i]
                 except:
                     pass
@@ -1202,10 +1208,14 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
                 # Check the change in SSH level from each point outwards from center
                 try:
                     change_min = min_X - eta[eddy_location[0]][eddy_location[1]-i-1]
+                    if np.isnan(change_min):
+                        condXmin = True
                 except:
                     pass
                 try:
                     change_max = max_X - eta[eddy_location[0]][eddy_location[1]+i+1]
+                    if np.isnan(change_max):
+                        condXmax = True
                 except:
                     pass
 
@@ -1516,6 +1526,9 @@ def full_inner_eddy_region_v2(eta=xr.DataArray,eddy_center=list(),warm=False,col
 
 
     def area_of_inner_eddy(threshold=float(),domainX=list(),domainY=list(),warm=False,cold=False,eddies=eddies):
+        if np.isnan(threshold):
+            return eddies
+            
         if warm:
             # Search domain error fix, sets to max extent of grid, if not, uses found domain
             if domainX == [0,0]:
@@ -1846,42 +1859,49 @@ def newEddyMethod(eddy_center=list,OW=xr.DataArray,hor_vel=xr.DataArray,eddiesDa
         
         if warm:
             # Find areas with OW < 0 for each step outwards from the center
-
+            
             # Reached limit conditions
             Xpos = True
             Xneg = True
             Ypos = True
             Yneg = True
+
             X = center[1]
             Y = center[0]
+
+            max_pos_x = np.max(domain[0]) - X
+            max_pos_y = np.max(domain[1]) - Y
+            min_pos_x = X - np.min(domain[0])
+            min_pos_y = Y - np.min(domain[1])
+
             eddies[Y,X] = 1
             for i in range(1,domain_search):
                 if Xpos==False and Xneg==False and Ypos==False and Yneg==False:
                     break
 
                 # X-Positive
-                if Xpos:
+                if Xpos and i<=max_pos_x:
                     OW_test = OW[Y-(i-1):Y+(i),X+i]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-(i-1):Y+(i),X+i] = eddies[Y-(i-1):Y+(i),X+i].where(criteria,other=1)
                     if eddies[Y-(i-1):Y+(i),X+i].max() != 1:
                         Xpos = False
                 # X-Negative
-                if Xneg:
+                if Xneg and i<=min_pos_x:
                     OW_test = OW[Y-(i-1):Y+(i),X-i]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-(i-1):Y+(i),X-i] = eddies[Y-(i-1):Y+(i),X-i].where(criteria,other=1)
                     if eddies[Y-(i-1):Y+(i),X-i].max() != 1:
                         Xneg = False
                 # Y-Positive
-                if Ypos:
+                if Ypos and i<=max_pos_y:
                     OW_test = OW[Y+i,X-i:X+i+1]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y+i,X-i:X+i+1] = eddies[Y+i,X-i:X+i+1].where(criteria, other=1)
                     if eddies[Y+i,X-i:X+i+1].max() != 1:
                         Ypos = False
                 # Y-Negative
-                if Yneg:
+                if Yneg and i<=min_pos_y:
                     OW_test = OW[Y-i,X-i:X+i+1]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-i,X-i:X+i+1] = eddies[Y-i,X-i:X+i+1].where(criteria, other=1)
@@ -1908,36 +1928,43 @@ def newEddyMethod(eddy_center=list,OW=xr.DataArray,hor_vel=xr.DataArray,eddiesDa
             Xneg = True
             Ypos = True
             Yneg = True
+            
             X = center[1]
             Y = center[0]
+
+            max_pos_x = np.max(domain[0]) - X
+            max_pos_y = np.max(domain[1]) - Y
+            min_pos_x = X - np.min(domain[0])
+            min_pos_y = Y - np.min(domain[1])
+
             eddies[Y,X] = 2
             for i in range(1,domain_search):
                 if Xpos==False and Xneg==False and Ypos==False and Yneg==False:
                     break
 
                 # X-Positive
-                if Xpos:
+                if Xpos and i<=max_pos_x:
                     OW_test = OW[Y-(i-1):Y+(i),X+i]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-(i-1):Y+(i),X+i] = eddies[Y-(i-1):Y+(i),X+i].where(criteria,other=2)
                     if eddies[Y-(i-1):Y+(i),X+i].max() != 2:
                         Xpos = False
                 # X-Negative
-                if Xneg:
+                if Xneg and i<=min_pos_x:
                     OW_test = OW[Y-(i-1):Y+(i),X-i]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-(i-1):Y+(i),X-i] = eddies[Y-(i-1):Y+(i),X-i].where(criteria,other=2)
                     if eddies[Y-(i-1):Y+(i),X-i].max() != 2:
                         Xneg = False
                 # Y-Positive
-                if Ypos:
+                if Ypos and i<=max_pos_y:
                     OW_test = OW[Y+i,X-i:X+i+1]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y+i,X-i:X+i+1] = eddies[Y+i,X-i:X+i+1].where(criteria, other=2)
                     if eddies[Y+i,X-i:X+i+1].max() != 2:
                         Ypos = False
                 # Y-Negative
-                if Yneg:
+                if Yneg and i<=min_pos_y:
                     OW_test = OW[Y-i,X-i:X+i+1]
                     criteria = (OW_test >= 0) | (OW_test.isnull())
                     eddies[Y-i,X-i:X+i+1] = eddies[Y-i,X-i:X+i+1].where(criteria, other=2)
