@@ -24,7 +24,7 @@ def eddyDetection(SSH,Okubo_Weiss): # Test if area has negative Okubo-Weiss para
         pbar.update(1)
         for i in range(4, mxbndX + 1):
             count += 1
-            if Okubo_Weiss[j, i] >= std_OW and Okubo_Weiss[j, i].isnull():  # Boundary conditions 
+            if Okubo_Weiss[j, i] >= std_OW:  # Boundary conditions 
                 count_skip += 1
                 continue
             center = SSH[j][i]
