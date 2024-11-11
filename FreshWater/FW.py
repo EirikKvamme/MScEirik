@@ -27,19 +27,19 @@ def FWT(mooringDataset=xr.Dataset,ref_salinity=int):
     # Compute total transport through the mooring array
     od = od.compute.mooring_volume_transport()
 
-    # Low-pass 5 day filter
-    cutoff_frequency = 1 / (5 * 24 * 3600)  # 5 days in seconds
-    sampling_frequency = 1 / (np.diff(od.dataset['time'].values).mean() / np.timedelta64(1, 's'))  # Sampling frequency in Hz
+    # # Low-pass 5 day filter
+    # cutoff_frequency = 1 / (5 * 24 * 3600)  # 5 days in seconds
+    # sampling_frequency = 1 / (np.diff(od.dataset['time'].values).mean() / np.timedelta64(1, 's'))  # Sampling frequency in Hz
 
-    # Apply the filter to the transport variable
-    od.dataset['transport'] = xr.apply_ufunc(
-        lowpass_filter,
-        od.dataset['transport'],
-        cutoff_frequency,
-        sampling_frequency,
-        input_core_dims=[['time']],
-        vectorize=True
-    )
+    # # Apply the filter to the transport variable
+    # od.dataset['transport'] = xr.apply_ufunc(
+    #     lowpass_filter,
+    #     od.dataset['transport'],
+    #     cutoff_frequency,
+    #     sampling_frequency,
+    #     input_core_dims=[['time']],
+    #     vectorize=True
+    # )
 
     # Defining salinity integration depth
     transport = od.dataset['transport']
