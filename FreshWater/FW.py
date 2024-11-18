@@ -61,3 +61,22 @@ def Transport(mooringDataset=xr.Dataset):
     transport = od.dataset['transport']
     
     return transport
+
+
+def FWC(obs=False,model=False,data=list,ref_salinity=float):
+    return_data = []
+    if obs:
+        for subdata in data:
+            sec = []
+            for i in range(len(subdata.time)):
+                sec.append(np.cumsum((ref_salinity-subdata.SA[i])/ref_salinity))
+            return_data.append(sec)
+
+    elif model:
+        for subdata in data:
+            sec = []
+            for subsubdata in subdata:
+                sec.append(np.cumsum((ref_salinity-subsubdata.S)/ref_salinity))
+            return_data.append(sec)
+
+    return return_data
