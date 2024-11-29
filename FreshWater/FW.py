@@ -94,7 +94,7 @@ def FWC_fixed_structure(obs=False,model=False,data=list,ref_salinity=float,verti
             sec = []
             for subsubdata in subdata:
                 
-                sec.append(np.cumsum(((ref_salinity-subsubdata)/ref_salinity) * obs_res[0:len(subsubdata)]))
+                sec.append(np.cumsum(((ref_salinity-subsubdata.values)/ref_salinity) * obs_res[0:len(subsubdata)].values))
             return_data.append(sec)
 
     elif model:
