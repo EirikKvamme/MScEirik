@@ -63,20 +63,46 @@ def Transport(mooringDataset=xr.Dataset):
     return transport
 
 
-def FWC(obs=False,model=False,data=list,ref_salinity=float):
+def FWC(obs=False,model=False,data=list,ref_salinity=float,vertical_res_model=xr.Dataset,vertical_res_obs=None):
     return_data = []
+    if vertical_res_obs:
+        obs_res = vertical_res_obs
+    else:
+        obs_res = 2 # m
     if obs:
         for subdata in data:
             sec = []
             for i in range(len(subdata.time)):
-                sec.append(np.cumsum((ref_salinity-subdata.SA[i])/ref_salinity))
+                sec.append(np.cumsum(((ref_salinity-subdata.SA[i])/ref_salinity) * obs_res))
             return_data.append(sec)
 
     elif model:
         for subdata in data:
             sec = []
             for subsubdata in subdata:
-                sec.append(np.cumsum((ref_salinity-subsubdata.S)/ref_salinity))
+                sec.append(np.cumsum(((ref_salinity-subsubdata.S)/ref_salinity )* vertical_res_model))
+            return_data.append(sec)
+
+    return return_data
+
+
+def FWC_fixed_structure(obs=False,model=False,data=list,ref_salinity=float,vertical_res_model=xr.Dataset,vertical_res_obs=None):
+    return_data = []
+    obs_res = vertical_res_obs
+    if obs:
+        for subdata in data:
+            sec = []
+            for subsubdata in subdata:
+                
+                sec.append(np.cumsum(((ref_salinity-subsubdata)/ref_salinity) * obs_res[0:len(subsubdata)]))
+            return_data.append(sec)
+
+    elif model:
+        for subdata in data:
+            sec = []
+            for subsubdata in subdata:
+                
+                sec.append(np.cumsum(((ref_salinity-subsubdata)/ref_salinity )* vertical_res_model[0:len(subsubdata)]))
             return_data.append(sec)
 
     return return_data
