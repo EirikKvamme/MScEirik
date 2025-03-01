@@ -421,7 +421,7 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
             y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
 
-            max_extent_search = np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
+            max_extent_search = 50 # np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
 
             X_pos = 0
             XY_pos = 0
@@ -432,23 +432,27 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             Y_neg = 0
             X_pos_Y_neg = 0
             pos = 0
-            for i in range(1,max_extent_search):
-                X_pos = eta_around_center[y_indices_center][x_indices_center+i] - eta_around_center[y_indices_center][x_indices_center+i-1]
-                XY_pos = eta_around_center[y_indices_center+i][x_indices_center+i] - eta_around_center[y_indices_center+i-1][x_indices_center+i-1]
-                Y_pos = eta_around_center[y_indices_center+i][x_indices_center] - eta_around_center[y_indices_center+i-1][x_indices_center]
-                X_neg_Y_pos = eta_around_center[y_indices_center+i][x_indices_center-i] - eta_around_center[y_indices_center+i-1][x_indices_center-i+1]
-                X_neg = eta_around_center[y_indices_center][x_indices_center-i] - eta_around_center[y_indices_center][x_indices_center-i+1]
-                XY_neg = eta_around_center[y_indices_center-i][x_indices_center-i] - eta_around_center[y_indices_center-i+1][x_indices_center-i+1]
-                Y_neg = eta_around_center[y_indices_center-i][x_indices_center] - eta_around_center[y_indices_center-i+1][x_indices_center]
-                X_pos_Y_neg = eta_around_center[y_indices_center-i][x_indices_center+i] - eta_around_center[y_indices_center-i+1][x_indices_center+i-1]
-                if np.max([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) > 0:
-                    pos = i-1
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_pos = eta_around_center[y_indices_center][x_indices_center+i+2] - 2*eta_around_center[y_indices_center][x_indices_center+i+1] + eta_around_center[y_indices_center][x_indices_center+i]
+                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
+                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
+                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
+                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
+                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
+                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
+                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1]
+                if np.max([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) >= 0:
+                    pos = i
+                    if test_calib:
+                        print('Local max i found',i)
                     break
             
-            if pos <= 0:
-                break
+            # if pos == 0:
+            #     if test_calib:
+            #         print('No inflextion point in warm eddy: ',(center))
+            #     break
 
-            levels = [np.max([
+            levels = [
                 eta_around_center[y_indices_center][x_indices_center+pos].values,
                 eta_around_center[y_indices_center+pos][x_indices_center+pos].values,
                 eta_around_center[y_indices_center+pos][x_indices_center].values,
@@ -457,7 +461,11 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 eta_around_center[y_indices_center-pos][x_indices_center-pos].values,
                 eta_around_center[y_indices_center-pos][x_indices_center].values,
                 eta_around_center[y_indices_center-pos][x_indices_center+pos].values
-            ])]
+            ]
+            levels_array = np.array(levels)
+
+            # Remove duplicates and sort the array
+            levels = np.unique(levels_array)
 
             # Step 2: Generate Contours
 
@@ -549,9 +557,16 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 if outermost_contour is not None:
                     plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
                     plt.contourf(mask.X, mask.Y, mask, colors=['white', 'blue'])
-                plt.scatter(*center_point, color='red')  # Mark the center point
-                plt.title("Topographic Data with Outermost Closed Contour Segment")
-                plt.show()
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                else:
+                    print('Local MAX not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
 
                 # Print the bounding box of the outermost closed contour segment
                 if outermost_contour is not None:
@@ -569,7 +584,7 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
             y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
 
-            max_extent_search = np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
+            max_extent_search = 70 # np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
 
             X_pos = 0
             XY_pos = 0
@@ -580,23 +595,27 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             Y_neg = 0
             X_pos_Y_neg = 0
             pos = 0
-            for i in range(1,max_extent_search):
-                X_pos = eta_around_center[y_indices_center][x_indices_center+i] - eta_around_center[y_indices_center][x_indices_center+i-1]
-                XY_pos = eta_around_center[y_indices_center+i][x_indices_center+i] - eta_around_center[y_indices_center+i-1][x_indices_center+i-1]
-                Y_pos = eta_around_center[y_indices_center+i][x_indices_center] - eta_around_center[y_indices_center+i-1][x_indices_center]
-                X_neg_Y_pos = eta_around_center[y_indices_center+i][x_indices_center-i] - eta_around_center[y_indices_center+i-1][x_indices_center-i+1]
-                X_neg = eta_around_center[y_indices_center][x_indices_center-i] - eta_around_center[y_indices_center][x_indices_center-i+1]
-                XY_neg = eta_around_center[y_indices_center-i][x_indices_center-i] - eta_around_center[y_indices_center-i+1][x_indices_center-i+1]
-                Y_neg = eta_around_center[y_indices_center-i][x_indices_center] - eta_around_center[y_indices_center-i+1][x_indices_center]
-                X_pos_Y_neg = eta_around_center[y_indices_center-i][x_indices_center+i] - eta_around_center[y_indices_center-i+1][x_indices_center+i-1]
-                if np.min([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) < 0:
-                    pos = i-1
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_pos = eta_around_center[y_indices_center][x_indices_center+i+2] - 2*eta_around_center[y_indices_center][x_indices_center+i+1] + eta_around_center[y_indices_center][x_indices_center+i]
+                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
+                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
+                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
+                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
+                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
+                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
+                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1]
+                if np.min([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) <= 0:
+                    pos = i
+                    if test_calib:
+                        print('Finds local min "i" pos',i)
                     break
             
-            if pos <= 0:
-                break
+            # if pos == 0:
+            #     if test_calib:
+            #         print('No inflextion point in cold eddy: ',(center))
+            #     break
 
-            levels = [np.max([
+            levels = [
                 eta_around_center[y_indices_center][x_indices_center+pos].values,
                 eta_around_center[y_indices_center+pos][x_indices_center+pos].values,
                 eta_around_center[y_indices_center+pos][x_indices_center].values,
@@ -605,7 +624,11 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 eta_around_center[y_indices_center-pos][x_indices_center-pos].values,
                 eta_around_center[y_indices_center-pos][x_indices_center].values,
                 eta_around_center[y_indices_center-pos][x_indices_center+pos].values
-            ])]
+            ]
+            levels_array = np.array(levels)
+
+            # Remove duplicates and sort the array
+            levels = np.unique(levels_array)
 
             # Step 2: Generate Contours
 
@@ -695,9 +718,15 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
                 if outermost_contour is not None:
                     plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
-                plt.scatter(*center_point, color='red')  # Mark the center point
-                plt.title("Topographic Data with Outermost Closed Contour Segment")
-                plt.show()
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
+                else:
+                    print('Local MIN not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
 
                 # Print the bounding box of the outermost closed contour segment
                 if outermost_contour is not None:
