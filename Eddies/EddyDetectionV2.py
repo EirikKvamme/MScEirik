@@ -4,6 +4,7 @@ import oceanspy as ospy
 import numpy as np
 from tqdm import tqdm
 from matplotlib.path import Path
+from scipy.ndimage import laplace
 
 # def function for detection of surface anom creating eddies
 
@@ -421,46 +422,78 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
             y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
 
-            max_extent_search = 50 # np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
+            max_extent_search = np.min([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
 
-            X_pos = 0
-            XY_pos = 0
-            Y_pos = 0
-            X_neg_Y_pos = 0
-            X_neg = 0
-            XY_neg = 0
-            Y_neg = 0
-            X_pos_Y_neg = 0
-            pos = 0
-            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+            eta_levels = []
+
+            for i in range(0,max_extent_search-2): # Second derivative utilizing the forward method
                 X_pos = eta_around_center[y_indices_center][x_indices_center+i+2] - 2*eta_around_center[y_indices_center][x_indices_center+i+1] + eta_around_center[y_indices_center][x_indices_center+i]
-                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
-                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
-                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
-                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
-                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
-                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
-                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1]
-                if np.max([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) >= 0:
-                    pos = i
+                if X_pos >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center][x_indices_center+i].values)
                     if test_calib:
                         print('Local max i found',i)
                     break
-            
-            # if pos == 0:
-            #     if test_calib:
-            #         print('No inflextion point in warm eddy: ',(center))
-            #     break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
+                if XY_pos >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center+i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
+                if Y_pos >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
+                if X_neg_Y_pos >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center-i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
+                if X_neg >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center][x_indices_center-i])
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
+                if XY_neg >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center-i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
+                if Y_neg >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center])
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1] + eta_around_center[y_indices_center-i][x_indices_center+i]
+                if X_pos_Y_neg >= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center+i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            max_eta = np.argmax(eta_levels)
 
             levels = [
-                eta_around_center[y_indices_center][x_indices_center+pos].values,
-                eta_around_center[y_indices_center+pos][x_indices_center+pos].values,
-                eta_around_center[y_indices_center+pos][x_indices_center].values,
-                eta_around_center[y_indices_center+pos][x_indices_center-pos].values,
-                eta_around_center[y_indices_center][x_indices_center-pos].values,
-                eta_around_center[y_indices_center-pos][x_indices_center-pos].values,
-                eta_around_center[y_indices_center-pos][x_indices_center].values,
-                eta_around_center[y_indices_center-pos][x_indices_center+pos].values
+                eta_levels[max_eta]
             ]
             levels_array = np.array(levels)
 
@@ -584,46 +617,78 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
             y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
 
-            max_extent_search = 70 # np.max([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
+            max_extent_search = np.min([len(eta_around_center.X.values)-x_indices_center,len(eta_around_center.Y)-y_indices_center])
 
-            X_pos = 0
-            XY_pos = 0
-            Y_pos = 0
-            X_neg_Y_pos = 0
-            X_neg = 0
-            XY_neg = 0
-            Y_neg = 0
-            X_pos_Y_neg = 0
-            pos = 0
-            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+            eta_levels = []
+
+            for i in range(0,max_extent_search-2): # Second derivative utilizing the forward method
                 X_pos = eta_around_center[y_indices_center][x_indices_center+i+2] - 2*eta_around_center[y_indices_center][x_indices_center+i+1] + eta_around_center[y_indices_center][x_indices_center+i]
-                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
-                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
-                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
-                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
-                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
-                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
-                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1]
-                if np.min([X_pos,XY_pos,Y_pos,X_neg_Y_pos,X_neg,XY_neg,Y_neg,X_pos_Y_neg]) <= 0:
-                    pos = i
+                if X_pos <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center][x_indices_center+i].values)
                     if test_calib:
-                        print('Finds local min "i" pos',i)
+                        print('Local max i found',i)
                     break
-            
-            # if pos == 0:
-            #     if test_calib:
-            #         print('No inflextion point in cold eddy: ',(center))
-            #     break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                XY_pos = eta_around_center[y_indices_center+i+2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center+i+1] + eta_around_center[y_indices_center+i][x_indices_center+i]
+                if XY_pos <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center+i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center] - 2*eta_around_center[y_indices_center+i+1][x_indices_center] + eta_around_center[y_indices_center+i][x_indices_center]
+                if Y_pos <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_neg_Y_pos = eta_around_center[y_indices_center+i+2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center+i+1][x_indices_center-i-1] + eta_around_center[y_indices_center+i][x_indices_center-i]
+                if X_neg_Y_pos <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center+i][x_indices_center-i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_neg = eta_around_center[y_indices_center][x_indices_center-i-2] - 2*eta_around_center[y_indices_center][x_indices_center-i-1] + eta_around_center[y_indices_center][x_indices_center-i]
+                if X_neg <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center][x_indices_center-i])
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                XY_neg = eta_around_center[y_indices_center-i-2][x_indices_center-i-2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center-i-1] + eta_around_center[y_indices_center-i][x_indices_center-i]
+                if XY_neg <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center-i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center] - 2*eta_around_center[y_indices_center-i-1][x_indices_center] + eta_around_center[y_indices_center-i][x_indices_center]
+                if Y_neg <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center])
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            for i in range(0,max_extent_search): # Second derivative utilizing the forward method
+                X_pos_Y_neg = eta_around_center[y_indices_center-i-2][x_indices_center+i+2] - 2*eta_around_center[y_indices_center-i-1][x_indices_center+i+1] + eta_around_center[y_indices_center-i][x_indices_center+i]
+                if X_pos_Y_neg <= 0:
+                    eta_levels.append(eta_around_center[y_indices_center-i][x_indices_center+i].values)
+                    if test_calib:
+                        print('Local max i found',i)
+                    break
+
+            min_eta = np.argmin(eta_levels)
 
             levels = [
-                eta_around_center[y_indices_center][x_indices_center+pos].values,
-                eta_around_center[y_indices_center+pos][x_indices_center+pos].values,
-                eta_around_center[y_indices_center+pos][x_indices_center].values,
-                eta_around_center[y_indices_center+pos][x_indices_center-pos].values,
-                eta_around_center[y_indices_center][x_indices_center-pos].values,
-                eta_around_center[y_indices_center-pos][x_indices_center-pos].values,
-                eta_around_center[y_indices_center-pos][x_indices_center].values,
-                eta_around_center[y_indices_center-pos][x_indices_center+pos].values
+                eta_levels[min_eta]
             ]
             levels_array = np.array(levels)
 
@@ -737,3 +802,467 @@ def inner_eddy_region_v3(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                     print("No closed contour segments found containing the center point.")
     
     return data
+
+
+def inner_eddy_region_v4(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm=False,test_calib=False,eddiesData=xr.DataArray()):
+    """
+    Based on Matsuoka et al. 2016.\n
+    Inner eddy detection utilizing maximum outer closed contour around each eddy center point.\n
+    Warm: Local maximum, Cold: Local minimum, test_calib: Plots contour field with max outer closed contour.\n
+    Previously saved eddies dataset can be utilized for further additions.
+    """
+    data = eddiesData
+
+    if warm:
+        for center in eddyCenterpoints:
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+
+            # Step 1: define inflexion point for level in contour
+            x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
+            y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
+
+            # Computes second derivative
+            laplacian_eta = laplace(eta_around_center)
+            laplacian = xr.zeros_like(eta_around_center)
+            laplacian.values = laplacian_eta
+            laplacian_eta = laplacian
+
+            # mesh = plt.pcolormesh(eta_around_center.X,eta_around_center.Y,laplacian_eta)
+            # plt.scatter(center[1],center[0])
+            # plt.colorbar(mesh)
+            # plt.show()
+
+            # Finds inflextion points
+            cond = laplacian_eta >= 0
+
+            inflection_ssh_values = eta_around_center.where(cond)
+            
+            # Finds maximum SSH from inflection points
+            inflection_ssh_values = inflection_ssh_values.where(inflection_ssh_values <= eta_around_center[y_indices_center][x_indices_center].values).values
+            # Remove NaN values from inflection_ssh_values
+            inflection_ssh_values = inflection_ssh_values[~np.isnan(inflection_ssh_values)]
+            max_ssh_index = np.argmax(inflection_ssh_values)
+
+            if inflection_ssh_values.size == 0:
+                print("inflection_ssh_values is empty")
+                continue  # Skip this iteration or handle the error appropriately
+
+            levels = [
+                inflection_ssh_values[max_ssh_index]
+            ]
+            levels_array = np.array(levels)
+
+            # Remove duplicates and sort the array
+            levels = np.unique(levels_array)
+
+            # Step 2: Generate Contours
+
+            contours = plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+            plt.close()
+            # Step 3: Collect all X and Y points of the paths of all contours
+            all_contour_points = []
+
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    # Collect the vertices of the path
+                    vertices = path.vertices
+                    all_contour_points.append(vertices)
+
+            # Step 4: Identify the Center Point
+            center_point = (center[1],center[0])
+
+            # Step 5: Process Contour Paths to Handle Jumps
+            def process_contour_path(vertices, jump_threshold=0.1):
+                segments = []
+                current_segment = [vertices[0]]
+                
+                for i in range(1, len(vertices)):
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
+                        segments.append(np.array(current_segment))
+                        current_segment = [vertices[i]]
+                    else:
+                        current_segment.append(vertices[i])
+                
+                if current_segment:
+                    segments.append(np.array(current_segment))
+                
+                return segments
+
+            processed_contour_segments = []
+            for vertices in all_contour_points:
+                segments = process_contour_path(vertices)
+                processed_contour_segments.extend(segments)
+
+            # Step 6: Find the Outermost Closed Contour Segment
+            outermost_contour = None
+            max_area = 0
+
+            def is_closed_contour(vertices, tol=1e-1):
+                distance = np.linalg.norm(vertices[0] - vertices[-1])
+                return distance < tol
+
+            for vertices in processed_contour_segments:
+                # Create a Path object from the vertices
+                path_obj = Path(vertices)
+                
+                # Check if the contour segment is closed
+                if is_closed_contour(vertices, tol=1e-2):  # Adjust the tolerance value as needed
+                    # Check if the center point is inside the contour segment
+                    if path_obj.contains_point(center_point):
+                        # Calculate the area of the contour segment using the shoelace formula
+                        x = vertices[:, 0]
+                        y = vertices[:, 1]
+                        area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+                                    # Update the outermost contour if this one has a larger area
+                        if area > max_area:
+                            max_area = area
+                            outermost_contour = vertices
+            
+            if outermost_contour is not None:
+                outermost_path = Path(outermost_contour)
+                mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                mask_flattened = outermost_path.contains_points(points)
+                mask.values = mask_flattened.reshape(mask.shape)
+
+                # Update eddies
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                current_subset = data.isel(X=x_indices, Y=y_indices)
+                cond = (~mask) | (current_subset != 0)
+                updated_subset = current_subset.where(cond, other=1)
+
+                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+
+            
+            if test_calib:
+                # Step 7: Plot the Data and the Outermost Closed Contour Segment
+                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                if outermost_contour is not None:
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
+                    plt.contourf(mask.X, mask.Y, mask, colors=['white', 'blue'])
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                else:
+                    print('Local MAX not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                # Print the bounding box of the outermost closed contour segment
+                if outermost_contour is not None:
+                    min_x, min_y = np.min(outermost_contour, axis=0)
+                    max_x, max_y = np.max(outermost_contour, axis=0)
+                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                else:
+                    print("No closed contour segments found containing the center point.")
+
+    if cold:
+        for center in eddyCenterpoints:
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            
+            # Step 1: define inflexion point for level in contour
+            x_indices_center = np.where((eta_around_center.X == center[1]) & (eta_around_center.X == center[1]))[0][0]
+            y_indices_center = np.where((eta_around_center.Y == center[0]) & (eta_around_center.Y == center[0]))[0][0]
+
+            # Computes second derivative
+            laplacian_eta = laplace(eta_around_center)
+            laplacian = xr.zeros_like(eta_around_center)
+            laplacian.values = laplacian_eta
+            laplacian_eta = laplacian
+
+            # Finds inflextion points
+            cond = laplacian_eta <= 0
+            
+            inflection_ssh_values = eta_around_center.where(cond)
+            # inflection_ssh_values = eta_around_center.where(np.diff(np.sign(laplacian_eta), axis=0) != 0)
+            
+            # Finds maximum SSH from inflection points
+            inflection_ssh_values = inflection_ssh_values.where(inflection_ssh_values >= eta_around_center[y_indices_center][x_indices_center].values).values
+            # Remove NaN values from inflection_ssh_values
+            inflection_ssh_values = inflection_ssh_values[~np.isnan(inflection_ssh_values)]
+            min_ssh_index = np.argmin(inflection_ssh_values)
+
+        #     # Finds inflextion points
+        #     inflection_points = np.where(np.diff(np.sign(laplacian_eta), axis=0) != 0)
+
+        #     # Ensure inflection points are within bounds
+        #     inflection_points = (inflection_points[0][inflection_points[0] < eta_around_center.shape[0]],
+        #                          inflection_points[1][inflection_points[1] < eta_around_center.shape[1]])
+
+        #     if len(inflection_points[0]) == 0 or len(inflection_points[1]) == 0:
+        #         continue  # Skip if no valid inflection points
+
+        #    # Finds maximum SSH from inflection points
+        #     inflection_ssh_values = eta_around_center.where(inflection_points)
+        #     inflection_ssh_values = inflection_ssh_values.where(inflection_ssh_values >= eta_around_center[y_indices_center][x_indices_center].values).values
+        #     min_ssh_index = np.argmin(inflection_ssh_values)
+
+            if inflection_ssh_values.size == 0:
+                print("inflection_ssh_values is empty")
+                continue  # Skip this iteration or handle the error appropriately
+
+            levels = [
+                inflection_ssh_values[min_ssh_index]
+            ]
+            levels_array = np.array(levels)
+
+            # Remove duplicates and sort the array
+            levels = np.unique(levels_array)
+
+            # Step 2: Generate Contours
+
+            contours = plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+            plt.close()
+            # Step 3: Collect all X and Y points of the paths of all contours
+            all_contour_points = []
+
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    # Collect the vertices of the path
+                    vertices = path.vertices
+                    all_contour_points.append(vertices)
+
+            # Step 4: Identify the Center Point
+            center_point = (center[1],center[0])
+
+            # Step 5: Process Contour Paths to Handle Jumps
+            def process_contour_path(vertices, jump_threshold=0.1):
+                segments = []
+                current_segment = [vertices[0]]
+                
+                for i in range(1, len(vertices)):
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
+                        segments.append(np.array(current_segment))
+                        current_segment = [vertices[i]]
+                    else:
+                        current_segment.append(vertices[i])
+                
+                if current_segment:
+                    segments.append(np.array(current_segment))
+                
+                return segments
+
+            processed_contour_segments = []
+            for vertices in all_contour_points:
+                segments = process_contour_path(vertices)
+                processed_contour_segments.extend(segments)
+
+            # Step 6: Find the Outermost Closed Contour Segment
+            outermost_contour = None
+            max_area = 0
+
+            def is_closed_contour(vertices, tol=1e-1):
+                distance = np.linalg.norm(vertices[0] - vertices[-1])
+                return distance < tol
+
+            for vertices in processed_contour_segments:
+                # Create a Path object from the vertices
+                path_obj = Path(vertices)
+                
+                # Check if the contour segment is closed
+                if is_closed_contour(vertices, tol=1e-2):  # Adjust the tolerance value as needed
+                    # Check if the center point is inside the contour segment
+                    if path_obj.contains_point(center_point):
+                        # Calculate the area of the contour segment using the shoelace formula
+                        x = vertices[:, 0]
+                        y = vertices[:, 1]
+                        area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+                                    # Update the outermost contour if this one has a larger area
+                        if area > max_area:
+                            max_area = area
+                            outermost_contour = vertices
+            
+            if outermost_contour is not None:
+                outermost_path = Path(outermost_contour)
+                mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                mask_flattened = outermost_path.contains_points(points)
+                mask.values = mask_flattened.reshape(mask.shape)
+
+                # Update eddies
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                current_subset = data.isel(X=x_indices, Y=y_indices)
+                cond = (~mask) | (current_subset != 0)
+                updated_subset = current_subset.where(cond, other=2)
+
+                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+
+            if test_calib:
+                # Step 7: Plot the Data and the Outermost Closed Contour Segment
+                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                if outermost_contour is not None:
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
+                else:
+                    print('Local MIN not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels)
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
+
+                # Print the bounding box of the outermost closed contour segment
+                if outermost_contour is not None:
+                    min_x, min_y = np.min(outermost_contour, axis=0)
+                    max_x, max_y = np.max(outermost_contour, axis=0)
+                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                else:
+                    print("No closed contour segments found containing the center point.")
+    
+    return data
+
+
+def outer_eddy_region(eddyCenterpoints=list,hor_vel=xr.DataArray(),test_calib=False,eddiesData=xr.DataArray()):
+    data = eddiesData
+    for center in eddyCenterpoints:
+            hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+
+            # Step 1: define inflexion point for level in contour
+
+            # Computes second derivative
+            laplacian_eta = laplace(hor_vel_around_center.values)
+
+            # Finds inflextion points
+            inflection_points = np.where(np.diff(np.sign(laplacian_eta), axis=0) != 0)
+
+            # Ensure inflection points are within bounds
+            inflection_points = (inflection_points[0][inflection_points[0] < hor_vel_around_center.shape[0]],
+                                 inflection_points[1][inflection_points[1] < hor_vel_around_center.shape[1]])
+
+            if len(inflection_points[0]) == 0 or len(inflection_points[1]) == 0:
+                continue  # Skip if no valid inflection points
+
+           # Finds maximum SSH from inflection points
+            inflection_speed_values = hor_vel_around_center.values[inflection_points]
+            max_speed_index = np.argmax(inflection_speed_values)
+
+            levels = [
+                inflection_speed_values[max_speed_index]
+            ]
+            levels_array = np.array(levels)
+
+            # Remove duplicates and sort the array
+            levels = np.unique(levels_array)
+
+            # Step 2: Generate Contours
+
+            contours = plt.contour(hor_vel_around_center.X, hor_vel_around_center.Y, hor_vel_around_center,levels)
+            plt.close()
+            # Step 3: Collect all X and Y points of the paths of all contours
+            all_contour_points = []
+
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    # Collect the vertices of the path
+                    vertices = path.vertices
+                    all_contour_points.append(vertices)
+
+            # Step 4: Identify the Center Point
+            center_point = (center[1],center[0])
+
+            # Step 5: Process Contour Paths to Handle Jumps
+            def process_contour_path(vertices, jump_threshold=0.1):
+                segments = []
+                current_segment = [vertices[0]]
+                
+                for i in range(1, len(vertices)):
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
+                        segments.append(np.array(current_segment))
+                        current_segment = [vertices[i]]
+                    else:
+                        current_segment.append(vertices[i])
+                
+                if current_segment:
+                    segments.append(np.array(current_segment))
+                
+                return segments
+
+            processed_contour_segments = []
+            for vertices in all_contour_points:
+                segments = process_contour_path(vertices)
+                processed_contour_segments.extend(segments)
+
+            # Step 6: Find the Outermost Closed Contour Segment
+            outermost_contour = None
+            max_area = 0
+
+            def is_closed_contour(vertices, tol=1e-1):
+                distance = np.linalg.norm(vertices[0] - vertices[-1])
+                return distance < tol
+
+            for vertices in processed_contour_segments:
+                # Create a Path object from the vertices
+                path_obj = Path(vertices)
+                
+                # Check if the contour segment is closed
+                if is_closed_contour(vertices, tol=1e-2):  # Adjust the tolerance value as needed
+                    # Check if the center point is inside the contour segment
+                    if path_obj.contains_point(center_point):
+                        # Calculate the area of the contour segment using the shoelace formula
+                        x = vertices[:, 0]
+                        y = vertices[:, 1]
+                        area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+                                    # Update the outermost contour if this one has a larger area
+                        if area > max_area:
+                            max_area = area
+                            outermost_contour = vertices
+            
+            if outermost_contour is not None:
+                outermost_path = Path(outermost_contour)
+                mask = xr.zeros_like(hor_vel_around_center, dtype=bool)
+
+                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                mask_flattened = outermost_path.contains_points(points)
+                mask.values = mask_flattened.reshape(mask.shape)
+
+                # Update eddies
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                current_subset = data.isel(X=x_indices, Y=y_indices)
+                cond = (~mask) | (current_subset != 0)
+                updated_subset = current_subset.where(cond, other=1)
+
+                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+
+            
+            if test_calib:
+                # Step 7: Plot the Data and the Outermost Closed Contour Segment
+                plt.contour(hor_vel_around_center.X, hor_vel_around_center.Y, hor_vel_around_center,levels)
+                if outermost_contour is not None:
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
+                    plt.contourf(mask.X, mask.Y, mask, colors=['white', 'blue'])
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                else:
+                    print('Local MAX not found')
+                    plt.pcolormesh(hor_vel_around_center.X,hor_vel_around_center.Y,hor_vel_around_center)
+                    plt.contour(hor_vel_around_center.X, hor_vel_around_center.Y, hor_vel_around_center,levels)
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                # Print the bounding box of the outermost closed contour segment
+                if outermost_contour is not None:
+                    min_x, min_y = np.min(outermost_contour, axis=0)
+                    max_x, max_y = np.max(outermost_contour, axis=0)
+                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                else:
+                    print("No closed contour segments found containing the center point.")
