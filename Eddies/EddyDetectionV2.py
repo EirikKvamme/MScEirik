@@ -1527,7 +1527,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             center_point = (center[1], center[0])
 
             # Process Contour Paths to Handle Jumps
-            def process_contour_path(vertices, jump_threshold=0.1):
+            def process_contour_path(vertices, jump_threshold=0.05):
                 segments = []
                 current_segment = [vertices[0]]
                 
@@ -1552,7 +1552,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             outermost_contour = None
             max_area = 0
 
-            def is_closed_contour(vertices, tol=1e-1):
+            def is_closed_contour(vertices, tol=1e-5):
                 distance = np.linalg.norm(vertices[0] - vertices[-1])
                 return distance < tol
 
@@ -1576,7 +1576,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 path_obj = Path(vertices)
                 
                 # Check if the contour segment is closed
-                if is_closed_contour(vertices, tol=1e-2):  # Adjust the tolerance value as needed
+                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
                     # Check if the center point is inside the contour segment
                     if path_obj.contains_point(center_point):
                         # Calculate the area of the contour segment using the shoelace formula
@@ -1663,7 +1663,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             center_point = (center[1], center[0])
 
             # Process Contour Paths to Handle Jumps
-            def process_contour_path(vertices, jump_threshold=0.1):
+            def process_contour_path(vertices, jump_threshold=0.05):
                 segments = []
                 current_segment = [vertices[0]]
                 
@@ -1688,7 +1688,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
             outermost_contour = None
             max_area = 0
 
-            def is_closed_contour(vertices, tol=1e-1):
+            def is_closed_contour(vertices, tol=1e-5):
                 distance = np.linalg.norm(vertices[0] - vertices[-1])
                 return distance < tol
 
@@ -1712,7 +1712,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 path_obj = Path(vertices)
                 
                 # Check if the contour segment is closed
-                if is_closed_contour(vertices, tol=1e-2):  # Adjust the tolerance value as needed
+                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
                     # Check if the center point is inside the contour segment
                     if path_obj.contains_point(center_point):
                         # Calculate the area of the contour segment using the shoelace formula
@@ -1749,13 +1749,14 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
 
             if test_calib:
                 # Step 7: Plot the Data and the Outermost Closed Contour Segment
-                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array)
+                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array,zorder=0)
                 if outermost_contour is not None:
-                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
-                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2,zorder=1)
+                    plt.scatter(center_point[0],center_point[1], color='red',edgecolors='black',zorder=2)  # Mark the center point
                     plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
                     plt.show()
                 else:
+                    pass
                     print('Local MIN not found')
                     plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
                     plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array)
