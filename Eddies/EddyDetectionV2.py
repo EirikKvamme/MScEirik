@@ -1772,3 +1772,439 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                     print("No closed contour segments found containing the center point.")
     
     return data
+
+
+def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.DataArray(),cold=False,warm=False,test_calib=False,eddiesData=xr.DataArray()):
+    """
+    Based on Matsuoka et al. 2016.\n
+    Inner eddy detection utilizing maximum outer closed contour around each eddy center point.\n
+    Warm: Local maximum, Cold: Local minimum, test_calib: Plots contour field with max outer closed contour.\n
+    Previously saved eddies dataset can be utilized for further additions.\n
+
+    This version utilizes only SSH, where the outermost closed contour without any other local max/min occurs.
+    """
+    data = eddiesData
+
+    if warm:
+        for center in eddyCenterpoints:
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            # Define outermost contour enclosing the eddy to mask out outlying values
+            max_eta = eta_around_center.max().values
+            min_eta = eta_around_center.min().values
+
+            step_size = 0.001
+            num_elements = int((max_eta-min_eta) / step_size) + 1
+            levels_array = np.linspace(min_eta,max_eta,num_elements)
+
+            contours = plt.contour(eta_around_center.X,eta_around_center.Y,eta_around_center,levels=levels_array)
+            plt.close()
+
+            # Collect all X and Y points of the paths of all contours
+            all_contour_points = []
+
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    # Collect the vertices of the path
+                    vertices = path.vertices
+                    all_contour_points.append(vertices)
+
+            # Identify the Center Point
+            center_point = (center[1], center[0])
+
+            # Process Contour Paths to Handle Jumps
+            def process_contour_path(vertices, jump_threshold=0.05):
+                segments = []
+                current_segment = [vertices[0]]
+                
+                for i in range(1, len(vertices)):
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
+                        segments.append(np.array(current_segment))
+                        current_segment = [vertices[i]]
+                    else:
+                        current_segment.append(vertices[i])
+                
+                if current_segment:
+                    segments.append(np.array(current_segment))
+                
+                return segments
+
+            processed_contour_segments = []
+            for vertices in all_contour_points:
+                segments = process_contour_path(vertices)
+                processed_contour_segments.extend(segments)
+
+            # Find the Outermost Closed Contour Segment
+            outermost_contour = None
+            max_area = 0
+
+            def is_closed_contour(vertices, tol=1e-5):
+                distance = np.linalg.norm(vertices[0] - vertices[-1])
+                return distance < tol
+
+            def calculate_area(vertices):
+                x = vertices[:, 0]
+                y = vertices[:, 1]
+                return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+            def contains_other_contours(outer_contour, all_contours, center_point):
+                outer_path = Path(outer_contour)
+                for contour in all_contours:
+                    if np.array_equal(contour, outer_contour):
+                        continue
+                    contour_path = Path(contour)
+                    if all(outer_path.contains_point(point) for point in contour) and not contour_path.contains_point(center_point):
+                        return True
+                return False
+
+            for vertices in processed_contour_segments:
+                # Create a Path object from the vertices
+                path_obj = Path(vertices)
+                
+                # Check if the contour segment is closed
+                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
+                    # Check if the center point is inside the contour segment
+                    if path_obj.contains_point(center_point):
+                        # Calculate the area of the contour segment using the shoelace formula
+                        area = calculate_area(vertices)
+                        
+                        # Check if this contour contains any other contour that does not contain the center point
+                        if not contains_other_contours(vertices, processed_contour_segments, center_point):
+                            # Update the outermost contour if this one has a larger area
+                            if area > max_area:
+                                max_area = area
+                                outermost_contour = vertices
+
+            # Mask the area of inner eddy eddy
+            if outermost_contour is not None:
+                outermost_path = Path(outermost_contour)
+                mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                mask_flattened = outermost_path.contains_points(points)
+                mask.values = mask_flattened.reshape(mask.shape)
+
+                # Update eddies
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                current_subset = data.isel(X=x_indices, Y=y_indices)
+                cond = (~mask) | (current_subset != 0)
+                updated_subset = current_subset.where(cond, other=1)
+
+                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+            
+            # Mask the outer eddy regions
+            if outermost_contour is not None:
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_in_center = hor_vel_around_center.where(mask)
+                hor_vel_max = hor_vel_in_center.max().values
+                hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
+                diff_hor_vel = hor_vel_max - hor_vel_center
+                
+
+                if diff_hor_vel >= 0.05: # The difference between the eddy center and the maximum velocity of the inner region must be significant
+                    contour_vel_num = hor_vel_max - (diff_hor_vel*(1/5))
+                    contour_vel = plt.contour(hor_vel_around_center.X,hor_vel_around_center.Y,hor_vel_around_center,levels=[contour_vel_num])
+                    plt.close()
+
+                    all_contour_points = []
+
+                    for collection in contour_vel.collections:
+                        for path in collection.get_paths():
+                            # Collect the vertices of the path
+                            vertices = path.vertices
+                            all_contour_points.append(vertices)
+
+                    processed_contour_segments = []
+                    for vertices in all_contour_points:
+                        segments = process_contour_path(vertices)
+                        processed_contour_segments.extend(segments)
+
+                    outermost_contour_vel = None
+                    max_area = 0
+                    indices = np.column_stack(np.where(mask))
+
+                    x_coords = hor_vel_in_center.X.values
+                    y_coords = hor_vel_in_center.Y.values
+
+                    # Convert indices to actual coordinates
+                    area_points = np.array([[x_coords[j], y_coords[i]] for i, j in indices])
+                    
+                    for vertices in processed_contour_segments:
+                        # Create a Path object from the vertices
+                        path_obj = Path(vertices)
+                        
+                        # Check if the contour segment is closed
+                        if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
+                            # Check if the center point is inside the contour segment
+                            if any(path_obj.contains_point(point) for point in area_points):
+                                area = calculate_area(vertices)
+                                if area > max_area:
+                                    max_area = area
+                                    outermost_contour_vel = vertices
+                        
+                        if outermost_contour_vel is not None:
+                            outermost_path = Path(outermost_contour_vel)
+                            mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                            X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                            points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                            mask_flattened = outermost_path.contains_points(points)
+                            mask.values = mask_flattened.reshape(mask.shape)
+
+                            # Update eddies
+                            x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                            y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                            current_subset = data.isel(X=x_indices, Y=y_indices)
+                            cond = (~mask) | (current_subset != 0)
+                            updated_subset = current_subset.where(cond, other=4)
+
+                            data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+
+
+
+
+            if test_calib:
+                # Step 7: Plot the Data and the Outermost Closed Contour Segment
+                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array)
+                if outermost_contour is not None:
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2)
+                    plt.contourf(mask.X, mask.Y, mask, colors=['white', 'blue'])
+                    plt.scatter(*center_point, color='red')  # Mark the center point
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                else:
+                    print('Local MAX not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array)
+                    plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
+                    plt.show()
+
+                # Print the bounding box of the outermost closed contour segment
+                if outermost_contour is not None:
+                    min_x, min_y = np.min(outermost_contour, axis=0)
+                    max_x, max_y = np.max(outermost_contour, axis=0)
+                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                else:
+                    print("No closed contour segments found containing the center point.")
+
+    if cold:
+        for center in eddyCenterpoints:
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+
+            # Define outermost contour enclosing the eddy to mask out outlying values
+            max_eta = eta_around_center.max().values
+            min_eta = eta_around_center.min().values
+
+            step_size = 0.001
+            num_elements = int((max_eta-min_eta) / step_size) + 1
+            levels_array = np.linspace(min_eta,max_eta,num_elements)
+
+            contours = plt.contour(eta_around_center.X,eta_around_center.Y,eta_around_center,levels=levels_array)
+            plt.close()
+
+            # Collect all X and Y points of the paths of all contours
+            all_contour_points = []
+
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    # Collect the vertices of the path
+                    vertices = path.vertices
+                    all_contour_points.append(vertices)
+
+            # Identify the Center Point
+            center_point = (center[1], center[0])
+
+            # Process Contour Paths to Handle Jumps
+            def process_contour_path(vertices, jump_threshold=0.05):
+                segments = []
+                current_segment = [vertices[0]]
+                
+                for i in range(1, len(vertices)):
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
+                        segments.append(np.array(current_segment))
+                        current_segment = [vertices[i]]
+                    else:
+                        current_segment.append(vertices[i])
+                
+                if current_segment:
+                    segments.append(np.array(current_segment))
+                
+                return segments
+
+            processed_contour_segments = []
+            for vertices in all_contour_points:
+                segments = process_contour_path(vertices)
+                processed_contour_segments.extend(segments)
+
+            # Find the Outermost Closed Contour Segment
+            outermost_contour = None
+            max_area = 0
+
+            def is_closed_contour(vertices, tol=1e-5):
+                distance = np.linalg.norm(vertices[0] - vertices[-1])
+                return distance < tol
+
+            def calculate_area(vertices):
+                x = vertices[:, 0]
+                y = vertices[:, 1]
+                return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+            def contains_other_contours(outer_contour, all_contours, center_point):
+                outer_path = Path(outer_contour)
+                for contour in all_contours:
+                    if np.array_equal(contour, outer_contour):
+                        continue
+                    contour_path = Path(contour)
+                    if all(outer_path.contains_point(point) for point in contour) and not contour_path.contains_point(center_point):
+                        return True
+                return False
+
+            for vertices in processed_contour_segments:
+                # Create a Path object from the vertices
+                path_obj = Path(vertices)
+                
+                # Check if the contour segment is closed
+                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
+                    # Check if the center point is inside the contour segment
+                    if path_obj.contains_point(center_point):
+                        # Calculate the area of the contour segment using the shoelace formula
+                        area = calculate_area(vertices)
+                        
+                        # Check if this contour contains any other contour that does not contain the center point
+                        if not contains_other_contours(vertices, processed_contour_segments, center_point):
+                            # Update the outermost contour if this one has a larger area
+                            if area > max_area:
+                                max_area = area
+                                outermost_contour = vertices
+
+            # Mask the area of inflextion point relevant for this eddy
+            if outermost_contour is not None:
+                outermost_path = Path(outermost_contour)
+                mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                mask_flattened = outermost_path.contains_points(points)
+                mask.values = mask_flattened.reshape(mask.shape)
+
+                # Update eddies
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                current_subset = data.isel(X=x_indices, Y=y_indices)
+                cond = (~mask) | (current_subset != 0)
+                updated_subset = current_subset.where(cond, other=2)
+
+                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+
+            # Mask the outer eddy regions
+            if outermost_contour is not None:
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_in_center = hor_vel_around_center.where(mask)
+                hor_vel_max = hor_vel_in_center.max().values
+                hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
+                diff_hor_vel = hor_vel_max - hor_vel_center
+                
+
+                if diff_hor_vel >= 0.05: # The difference between the eddy center and the maximum velocity of the inner region must be significant
+                    contour_vel_num = hor_vel_max - (diff_hor_vel*(1/5))
+                    contour_vel = plt.contour(hor_vel_around_center.X,hor_vel_around_center.Y,hor_vel_around_center,levels=[contour_vel_num])
+                    plt.close()
+
+                    all_contour_points = []
+
+                    for collection in contour_vel.collections:
+                        for path in collection.get_paths():
+                            # Collect the vertices of the path
+                            vertices = path.vertices
+                            all_contour_points.append(vertices)
+
+                    processed_contour_segments = []
+                    for vertices in all_contour_points:
+                        segments = process_contour_path(vertices)
+                        processed_contour_segments.extend(segments)
+
+                    outermost_contour_vel = None
+                    max_area = 0
+                    indices = np.column_stack(np.where(mask))
+
+                    x_coords = hor_vel_in_center.X.values
+                    y_coords = hor_vel_in_center.Y.values
+
+                    # Convert indices to actual coordinates
+                    area_points = np.array([[x_coords[j], y_coords[i]] for i, j in indices])
+                    
+                    for vertices in processed_contour_segments:
+                        # Create a Path object from the vertices
+                        path_obj = Path(vertices)
+                        
+                        # Check if the contour segment is closed
+                        if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
+                            # Check if the center point is inside the contour segment
+                            if any(path_obj.contains_point(point) for point in area_points):
+                                area = calculate_area(vertices)
+                                if area > max_area:
+                                    max_area = area
+                                    outermost_contour_vel = vertices
+                        
+                        if outermost_contour_vel is not None:
+                            outermost_path = Path(outermost_contour_vel)
+                            mask = xr.zeros_like(eta_around_center, dtype=bool)
+
+                            X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                            points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+
+                            mask_flattened = outermost_path.contains_points(points)
+                            mask.values = mask_flattened.reshape(mask.shape)
+
+                            # Update eddies
+                            x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                            y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+
+                            current_subset = data.isel(X=x_indices, Y=y_indices)
+                            cond = (~mask) | (current_subset != 0)
+                            updated_subset = current_subset.where(cond, other=4)
+
+                            data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+                
+
+            if test_calib:
+                # Step 7: Plot the Data and the Outermost Closed Contour Segment
+                plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array,zorder=0)
+                if outermost_contour is not None:
+                    plt.plot(outermost_contour[:, 0], outermost_contour[:, 1], 'r-', linewidth=2,zorder=1)
+                    plt.scatter(center_point[0],center_point[1], color='red',edgecolors='black',zorder=2)  # Mark the center point
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
+                else:
+                    pass
+                    print('Local MIN not found')
+                    plt.pcolormesh(eta_around_center.X,eta_around_center.Y,eta_around_center)
+                    plt.contour(eta_around_center.X, eta_around_center.Y, eta_around_center,levels_array)
+                    plt.title("Topographic Data LOCAL MIN with Outermost Closed Contour Segment")
+                    plt.show()
+
+                # Print the bounding box of the outermost closed contour segment
+                if outermost_contour is not None:
+                    min_x, min_y = np.min(outermost_contour, axis=0)
+                    max_x, max_y = np.max(outermost_contour, axis=0)
+                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                else:
+                    print("No closed contour segments found containing the center point.")
+    
+    return data
+
+
+def EddyTracking(eddyDataset=xr.DataArray(),center_points=list,EddiesTracked=None):
+    if EddiesTracked is not None:
+        data = EddiesTracked
+    
+    for center in center_points:
+        pass
