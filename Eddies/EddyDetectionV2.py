@@ -1774,20 +1774,24 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
     return data
 
 
-def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.DataArray(),cold=False,warm=False,test_calib=False,eddiesData=xr.DataArray()):
+def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.DataArray(),cold=False,warm=False,test_calib=False,eddiesData=xr.DataArray(),
+                        min_vel_diff=0.05,
+                        percentage_diff_vel=20):
     """
-    Based on Matsuoka et al. 2016.\n
     Inner eddy detection utilizing maximum outer closed contour around each eddy center point.\n
     Warm: Local maximum, Cold: Local minimum, test_calib: Plots contour field with max outer closed contour.\n
     Previously saved eddies dataset can be utilized for further additions.\n
-
-    This version utilizes only SSH, where the outermost closed contour without any other local max/min occurs.
+    \n
+    min_vel_diff:[m/s] The mimimum velocity difference between the eddy centre point and the maximum velocity of the inner eddy region.\n
+    percentage_diff_vel:[%] Percentage of the difference between the maximum velocity and the eddy center point velocity, and is used to subtract the maximum velocity to include more of the outer eddy region.\n
+    \n
+    This version utilizes both SSH and velocity maximum of the inner eddy region, where the outermost closed contour without any other local max/min occurs.
     """
     data = eddiesData
 
     if warm:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
             min_eta = eta_around_center.min().values
@@ -1886,7 +1890,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -1894,18 +1898,18 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 updated_subset = current_subset.where(cond, other=1)
 
                 data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
-            
+            outermost_contour_vel = None
             # Mask the outer eddy regions
             if outermost_contour is not None:
-                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
                 hor_vel_in_center = hor_vel_around_center.where(mask)
                 hor_vel_max = hor_vel_in_center.max().values
                 hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
                 diff_hor_vel = hor_vel_max - hor_vel_center
                 
 
-                if diff_hor_vel >= 0.05: # The difference between the eddy center and the maximum velocity of the inner region must be significant
-                    contour_vel_num = hor_vel_max - (diff_hor_vel*(1/5))
+                if diff_hor_vel >= min_vel_diff: # The difference between the eddy center and the maximum velocity of the inner region must be significant
+                    contour_vel_num = hor_vel_max - (diff_hor_vel*(percentage_diff_vel/100))
                     contour_vel = plt.contour(hor_vel_around_center.X,hor_vel_around_center.Y,hor_vel_around_center,levels=[contour_vel_num])
                     plt.close()
 
@@ -1922,7 +1926,6 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                         segments = process_contour_path(vertices)
                         processed_contour_segments.extend(segments)
 
-                    outermost_contour_vel = None
                     max_area = 0
                     indices = np.column_stack(np.where(mask))
 
@@ -1956,7 +1959,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                             mask.values = mask_flattened.reshape(mask.shape)
 
                             # Update eddies
-                            x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                            x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
                             y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                             current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -1985,17 +1988,23 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                     plt.title("Topographic Data LOCAL MAX with Outermost Closed Contour Segment")
                     plt.show()
 
-                # Print the bounding box of the outermost closed contour segment
-                if outermost_contour is not None:
-                    min_x, min_y = np.min(outermost_contour, axis=0)
-                    max_x, max_y = np.max(outermost_contour, axis=0)
-                    print(f"Outermost closed contour segment bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
+                # Outer eddy region test configuration plot
+                if outermost_contour_vel is not None:
+                    fig, ax = plt.subplots()
+                    ax.pcolormesh(eta_around_center.X, eta_around_center.Y, eta_around_center)
+                    ax.contour(hor_vel_around_center.X, hor_vel_around_center.Y, hor_vel_around_center,cmap='binary')
+                    ax.plot(outermost_contour_vel[:, 0], outermost_contour_vel[:, 1], 'r-', linewidth=2)
+                    # ax.contourf(mask.X, mask.Y, mask, colors=['white', 'blue'])
+                    ax.scatter(*center_point, color='red')  # Mark the center point
+                    ax.set_title("Topographic Data LOCAL MAX with velocity maximum segment")
+                    fig.show()
+                    
                 else:
-                    print("No closed contour segments found containing the center point.")
+                    print("No Outer eddy region found.")
 
     if cold:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
 
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
@@ -2095,7 +2104,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2106,15 +2115,15 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
 
             # Mask the outer eddy regions
             if outermost_contour is not None:
-                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
                 hor_vel_in_center = hor_vel_around_center.where(mask)
                 hor_vel_max = hor_vel_in_center.max().values
                 hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
                 diff_hor_vel = hor_vel_max - hor_vel_center
                 
 
-                if diff_hor_vel >= 0.05: # The difference between the eddy center and the maximum velocity of the inner region must be significant
-                    contour_vel_num = hor_vel_max - (diff_hor_vel*(1/5))
+                if diff_hor_vel >= min_vel_diff: # The difference between the eddy center and the maximum velocity of the inner region must be significant
+                    contour_vel_num = hor_vel_max - (diff_hor_vel*(percentage_diff_vel/100))
                     contour_vel = plt.contour(hor_vel_around_center.X,hor_vel_around_center.Y,hor_vel_around_center,levels=[contour_vel_num])
                     plt.close()
 
@@ -2165,7 +2174,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                             mask.values = mask_flattened.reshape(mask.shape)
 
                             # Update eddies
-                            x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                            x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
                             y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                             current_subset = data.isel(X=x_indices, Y=y_indices)
