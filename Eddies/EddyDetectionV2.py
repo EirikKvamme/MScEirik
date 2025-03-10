@@ -1898,7 +1898,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 updated_subset = current_subset.where(cond, other=1)
 
                 data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
-            outermost_contour_vel = None
+            outermost_contour_vel = []
             # Mask the outer eddy regions
             if outermost_contour is not None:
                 hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
@@ -1943,30 +1943,28 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                         if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
                             # Check if the center point is inside the contour segment
                             if any(path_obj.contains_point(point) for point in area_points):
-                                area = calculate_area(vertices)
-                                if area > max_area:
-                                    max_area = area
-                                    outermost_contour_vel = vertices
+                                    outermost_contour_vel.append(vertices)
                         
-                        if outermost_contour_vel is not None:
-                            outermost_path = Path(outermost_contour_vel)
-                            mask = xr.zeros_like(eta_around_center, dtype=bool)
+                        if len(outermost_contour_vel) != 0:
+                            for vertices in outermost_contour_vel:
+                                outermost_path = Path(vertices)
+                                mask = xr.zeros_like(eta_around_center, dtype=bool)
 
-                            X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
-                            points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+                                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
 
-                            mask_flattened = outermost_path.contains_points(points)
-                            mask.values = mask_flattened.reshape(mask.shape)
+                                mask_flattened = outermost_path.contains_points(points)
+                                mask.values = mask_flattened.reshape(mask.shape)
 
-                            # Update eddies
-                            x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
-                            y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+                                # Update eddies
+                                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
-                            current_subset = data.isel(X=x_indices, Y=y_indices)
-                            cond = (~mask) | (current_subset != 0)
-                            updated_subset = current_subset.where(cond, other=4)
+                                current_subset = data.isel(X=x_indices, Y=y_indices)
+                                cond = (~mask) | (current_subset != 0)
+                                updated_subset = current_subset.where(cond, other=4)
 
-                            data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+                                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
 
 
 
@@ -2140,7 +2138,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                         segments = process_contour_path(vertices)
                         processed_contour_segments.extend(segments)
 
-                    outermost_contour_vel = None
+                    outermost_contour_vel = []
                     max_area = 0
                     indices = np.column_stack(np.where(mask))
 
@@ -2158,30 +2156,28 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                         if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
                             # Check if the center point is inside the contour segment
                             if any(path_obj.contains_point(point) for point in area_points):
-                                area = calculate_area(vertices)
-                                if area > max_area:
-                                    max_area = area
-                                    outermost_contour_vel = vertices
+                                    outermost_contour_vel.append(vertices)
                         
-                        if outermost_contour_vel is not None:
-                            outermost_path = Path(outermost_contour_vel)
-                            mask = xr.zeros_like(eta_around_center, dtype=bool)
+                        if len(outermost_contour_vel) != 0:
+                            for vertices in outermost_contour_vel:
+                                outermost_path = Path(vertices)
+                                mask = xr.zeros_like(eta_around_center, dtype=bool)
 
-                            X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
-                            points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
+                                X_vals, Y_vals = np.meshgrid(mask.X, mask.Y)
+                                points = np.vstack((X_vals.flatten(), Y_vals.flatten())).T
 
-                            mask_flattened = outermost_path.contains_points(points)
-                            mask.values = mask_flattened.reshape(mask.shape)
+                                mask_flattened = outermost_path.contains_points(points)
+                                mask.values = mask_flattened.reshape(mask.shape)
 
-                            # Update eddies
-                            x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
-                            y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
+                                # Update eddies
+                                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                                y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
-                            current_subset = data.isel(X=x_indices, Y=y_indices)
-                            cond = (~mask) | (current_subset != 0)
-                            updated_subset = current_subset.where(cond, other=4)
+                                current_subset = data.isel(X=x_indices, Y=y_indices)
+                                cond = (~mask) | (current_subset != 0)
+                                updated_subset = current_subset.where(cond, other=4)
 
-                            data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
+                                data.values[np.ix_(y_indices, x_indices)] = updated_subset.values
                 
 
             if test_calib:
