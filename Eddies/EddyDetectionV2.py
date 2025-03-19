@@ -8,11 +8,11 @@ from scipy.ndimage import laplace
 
 # def function for detection of surface anom creating eddies
 
-def eddyDetection(SSH, Okubo_Weiss):
+def eddyDetection(SSH, Okubo_Weiss, threshold):
     """
-    Locates local max/min of SSH based on negative Okubo-Weiss parameter of -0.2std
+    Locates local max/min of SSH based on negative Okubo-Weiss parameter of -0.2std if other threshold not defined
     """
-    std_OW = Okubo_Weiss.std().item() * -0.2
+    
     X = SSH.X.values
     Y = SSH.Y.values
     SSH = SSH.values
@@ -24,7 +24,7 @@ def eddyDetection(SSH, Okubo_Weiss):
 
     for j in range(4, mxbndY + 1):
         for i in range(4, mxbndX + 1):
-            if Okubo_Weiss_np[j, i] > std_OW:  # Boundary conditions
+            if Okubo_Weiss_np[j, i] > threshold:  # Boundary conditions
                 continue
 
             center = SSH[j, i]

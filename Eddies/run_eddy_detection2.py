@@ -36,7 +36,8 @@ depth = depth.where(depth > 0, np.nan)
 
 df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Background_var_eddies.nc')
 
-df_OW = df['Okubo_Weiss']
+#df_OW = df['Okubo_Weiss']
+df_OW = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/OW_WMZ.nc')['w_mean_Okubo_Weiss']
 df_OW = df_OW*(1/(10**(-9)))
 df_eta = df['Eta']
 
@@ -49,12 +50,12 @@ del od, df
 #####################################################################################################################################
 # Child domain
 domain_center = [[-20,0],[71,74]]
-OW_center = df_OW.sel(X=slice(domain_center[0][0],domain_center[0][1])).sel(Y=slice(domain_center[1][0],domain_center[1][1])).sel(Z=-1)
+OW_center = df_OW.sel(X=slice(domain_center[0][0],domain_center[0][1])).sel(Y=slice(domain_center[1][0],domain_center[1][1]))
 eta_center = df_eta.sel(X=slice(domain_center[0][0],domain_center[0][1])).sel(Y=slice(domain_center[1][0],domain_center[1][1]))
 
 # Parent domain
 eta = df_eta.sel(X=slice(domain_center[0][0]-2,domain_center[0][1]+2)).sel(Y=slice(domain_center[1][0]-1,domain_center[1][1]+1))
-OW = df_OW.sel(X=slice(domain_center[0][0]-2,domain_center[0][1]+2)).sel(Y=slice(domain_center[1][0]-1,domain_center[1][1]+1)).sel(Z=-1)
+OW = df_OW.sel(X=slice(domain_center[0][0]-2,domain_center[0][1]+2)).sel(Y=slice(domain_center[1][0]-1,domain_center[1][1]+1))
 
 # Resample data
 eta = eta.resample(time='D').mean(dim='time')
@@ -86,7 +87,7 @@ if run:
         eddyLocation.append(eddy.eddyDetection(eta_center[i],OW_center[i],OW_th))
         pbar.update(1)
     pbar.close()
-    with open("eddyCenterpoints_fullYear.txt",'w') as f:
+    with open("eddyCenterpoints_fullYear_2.txt",'w') as f:
         for time in range(len(eddyLocation)):
             if time != len(eddyLocation)-1:
                 f.write(str(eddyLocation[time])+',')
@@ -95,7 +96,7 @@ if run:
 
 else:
     print('###Loading previously saved eddy centerpoints###')
-    with open("eddyCenterpoints_fullYear.txt",'r') as f:
+    with open("eddyCenterpoints_fullYear_2.txt",'r') as f:
         data = f.read()
         eddyLocation = ast.literal_eval(data)
 ############################################################################################################
@@ -116,10 +117,10 @@ if run:
     eddies = eddies.where(~cond,other=4)
     ###############################################################
     eddies = eddies.where(eddies != 0, np.nan)
-    eddies.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')
+    eddies.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_2.nc')
     pbar.close()
 else:
-    eddies = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')
+    eddies = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_2.nc')
     eddies = eddies['EddyDetection']
 ##########################################################################################################
 print('### Complete ###')
