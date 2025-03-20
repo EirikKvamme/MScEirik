@@ -10,7 +10,7 @@ from scipy.ndimage import laplace
 
 def eddyDetection(SSH, Okubo_Weiss, threshold):
     """
-    Locates local max/min of SSH based on negative Okubo-Weiss parameter of -0.2std if other threshold not defined
+    Locates local max/min of SSH based threshold Okubo-Weiss parameter
     """
     
     X = SSH.X.values
@@ -24,7 +24,7 @@ def eddyDetection(SSH, Okubo_Weiss, threshold):
 
     for j in range(4, mxbndY + 1):
         for i in range(4, mxbndX + 1):
-            if Okubo_Weiss_np[j, i] > threshold:  # Boundary conditions
+            if Okubo_Weiss_np[j, i] >= threshold:  # Boundary conditions
                 continue
 
             center = SSH[j, i]

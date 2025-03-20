@@ -12,12 +12,12 @@ import matplotlib
 # Suppress specific MatplotlibDeprecationWarning
 warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
 
-with open("eddyCenterpoints_fullYear.txt",'r') as f:
+with open("eddyCenterpoints_fullYear_2.txt",'r') as f:
         data = f.read()
         eddyLocation = ast.literal_eval(data)
 
 
-eddy_df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')['EddyDetection']
+eddy_df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_2.nc')['EddyDetection']
 eddy_area = eddy_df.where(eddy_df != 4, other=np.nan)
 
 # Test few timesteps

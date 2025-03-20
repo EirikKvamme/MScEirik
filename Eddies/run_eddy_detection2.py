@@ -37,7 +37,7 @@ depth = depth.where(depth > 0, np.nan)
 df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Background_var_eddies.nc')
 
 #df_OW = df['Okubo_Weiss']
-df_OW = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/OW_WMZ.nc')['w_mean_Okubo_Weiss']
+df_OW = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/OW_WM100Z.nc')['w_mean_Okubo_Weiss']
 df_OW = df_OW*(1/(10**(-9)))
 df_eta = df['Eta']
 
@@ -80,7 +80,7 @@ run = config_child_domain
 
 if run:
     eddyLocation = []
-    OW_th = -0.1*OW_center.std().values
+    OW_th = 0#-0.1*OW_center.std().values
     T = len(eta)
     pbar = tqdm(total=T, desc="Running eddy centerpoint algorythm")
     for i in range(len(eta)):
@@ -107,14 +107,11 @@ if run:
     eddies = xr.full_like(eta,fill_value=0)
     eddies = eddies.rename("EddyDetection")
     T = len(eddyLocation)
-    pbar = tqdm(total=T, desc="Running algorythm")
+    pbar = tqdm(total=T, desc="Running eddy area algorythm")
     for time in range(len(eddyLocation)):
         eddies[time] = eddy.inner_eddy_region_v5(eddyLocation[time][0],eta=eta[time],warm=True,cold=False,test_calib=False,eddiesData=eddies[time])
         eddies[time] = eddy.inner_eddy_region_v5(eddyLocation[time][1],eta=eta[time],warm=False,cold=True,test_calib=False,eddiesData=eddies[time])
         pbar.update(1)
-    # Stream detection#############################################
-    cond = (hor_vel >= 0.4) & (eddies == 0)
-    eddies = eddies.where(~cond,other=4)
     ###############################################################
     eddies = eddies.where(eddies != 0, np.nan)
     eddies.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_2.nc')
