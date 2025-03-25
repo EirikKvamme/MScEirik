@@ -258,7 +258,6 @@ for time in tqdm(time_,desc='Running warm eddy ID'):
                         update = eddy_time[time].where(cond,other=str(eddy[0]))
                         eddy_time[time] = update
         ID_locMax.append(new_eddy_max)
-    print(ID_locMax[-1])
 
 
 ID_locMin = []
@@ -341,7 +340,7 @@ for time in tqdm(time_,desc='Running cold eddy ID'):
                     
                     # Ensure IDs are lists of lists
                     ID_in_region = [convert_to_list(ids) if isinstance(ids, str) else [str(int(ids))] for ids in ID_in_region]
-                    pre_IDs = [X[0] for X in ID_locMax[-1]]
+                    pre_IDs = [X[0] for X in ID_locMin[-1]]
 
                     # Flatten the lists
                     flattened_ID_in_region = [item for sublist in ID_in_region for item in sublist]
@@ -367,7 +366,7 @@ for time in tqdm(time_,desc='Running cold eddy ID'):
                             ID_in_region = set(ID_in_region) # Give unique IDs
                             # Ensure IDs are lists of lists
                             ID_in_region = [convert_to_list(ids) if isinstance(ids, str) else [str(int(ids))] for ids in ID_in_region]
-                            pre_IDs = [X[0] for X in ID_locMax[-1]]
+                            pre_IDs = [X[0] for X in ID_locMin[-2]]
 
                             # Flatten the lists
                             flattened_ID_in_region = [item for sublist in ID_in_region for item in sublist]
@@ -452,7 +451,8 @@ for time in tqdm(time_,desc='Running cold eddy ID'):
 
                         mask_flattened = region.contains_points(points)
                         mask.values = mask_flattened.reshape(mask.shape)
-                        update = eddy_time[time].where(~mask,other=str(eddy[0]))
+                        cond = (~mask)
+                        update = eddy_time[time].where(cond,other=str(eddy[0]))
                         eddy_time[time] = update
         ID_locMin.append(new_eddy_min)
 
@@ -467,7 +467,7 @@ for time_index, time_data in enumerate(ID_locMax):
 df = pd.DataFrame(flattened_data1, columns=['Time', 'ID', 'Latitude', 'Longitude'])
 
 # Write to Excel
-df.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMAX_test.csv', index=False)
+df.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMAX.csv', index=False)
 
 # Flatten the data
 flattened_data2 = []
@@ -479,6 +479,6 @@ for time_index, time_data in enumerate(ID_locMin):
 df2 = pd.DataFrame(flattened_data2, columns=['Time', 'ID', 'Latitude', 'Longitude'])
 
 # Write to Excel
-df2.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMin_test.csv', index=False)
+df2.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMin.csv', index=False)
 
 eddy_time.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/EddyAreaID.nc')
