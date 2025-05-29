@@ -19,7 +19,7 @@ with open("eddyCenterpoints_fullYear.txt",'r') as f:
 #eddyLocation = eddyLocation[175:186] # test
 
 
-eddy_df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')['EddyDetection']
+eddy_df = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_final.nc')['EddyDetection']
 eddy_area = eddy_df.where(eddy_df != 4, other=np.nan)
 #eddy_area = eddy_area[175:186] # Test
 
@@ -467,7 +467,7 @@ for time_index, time_data in enumerate(ID_locMax):
 df = pd.DataFrame(flattened_data1, columns=['Time', 'ID', 'Latitude', 'Longitude'])
 
 # Write to Excel
-df.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMAX.csv', index=False)
+df.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMAX_final.csv', index=False)
 
 # Flatten the data
 flattened_data2 = []
@@ -479,6 +479,6 @@ for time_index, time_data in enumerate(ID_locMin):
 df2 = pd.DataFrame(flattened_data2, columns=['Time', 'ID', 'Latitude', 'Longitude'])
 
 # Write to Excel
-df2.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMin.csv', index=False)
+df2.to_csv('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/locMin_final.csv', index=False)
 
-eddy_time.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/EddyAreaID.nc')
+eddy_time.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/EddyResults/Tracking/EddyAreaID_final.nc')

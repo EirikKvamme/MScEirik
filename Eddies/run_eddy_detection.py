@@ -40,12 +40,9 @@ df_OW = df['Okubo_Weiss']
 df_OW = df_OW*(1/(10**(-9)))
 df_eta = df['Eta']
 
-od = ospy.OceanDataset(df)
-od = od.compute.horizontal_velocity_magnitude()
 
-df_hor_vel = od['hor_vel']
 # Delete no longer used variables which uses memory
-del od, df
+del df
 #####################################################################################################################################
 # Child domain
 domain_center = [[-20,0],[71,74]]
@@ -61,14 +58,12 @@ eta = eta.resample(time='D').mean(dim='time')
 eta_center = eta_center.resample(time='D').mean(dim='time')
 OW = OW.resample(time='D').mean(dim='time')
 OW_center = OW_center.resample(time='D').mean(dim='time')
-hor_vel = df_hor_vel.resample(time='D').mean(dim='time')
 
 # Define time extent
 eta = eta.sel(time=slice(time[0],time[1]))
 eta_center = eta_center.sel(time=slice(time[0],time[1]))
 OW = OW.sel(time=slice(time[0],time[1]))
 OW_center = OW_center.sel(time=slice(time[0],time[1]))
-hor_vel = hor_vel.sel(X=slice(domain_center[0][0]-2,domain_center[0][1]+2)).sel(Y=slice(domain_center[1][0]-2,domain_center[1][1]+2)).sel(Z=-1).sel(time=slice(time[0],time[1]))
 
 
 eta = eta.where(depth > 0, np.nan)
@@ -111,15 +106,12 @@ if run:
         eddies[time] = eddy.inner_eddy_region_v5(eddyLocation[time][0],eta=eta[time],warm=True,cold=False,test_calib=False,eddiesData=eddies[time])
         eddies[time] = eddy.inner_eddy_region_v5(eddyLocation[time][1],eta=eta[time],warm=False,cold=True,test_calib=False,eddiesData=eddies[time])
         pbar.update(1)
-    # Stream detection#############################################
-    cond = (hor_vel >= 0.4) & (eddies == 0)
-    eddies = eddies.where(~cond,other=4)
     ###############################################################
     eddies = eddies.where(eddies != 0, np.nan)
-    eddies.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')
+    eddies.to_netcdf('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_final.nc')
     pbar.close()
 else:
-    eddies = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear.nc')
+    eddies = xr.open_dataset('/nird/projects/NS9608K/MSc_EK/Data/Eddies_fullYear_final.nc')
     eddies = eddies['EddyDetection']
 ##########################################################################################################
 print('### Complete ###')

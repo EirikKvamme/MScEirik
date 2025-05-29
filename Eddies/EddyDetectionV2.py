@@ -1502,92 +1502,92 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
 
     if warm:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-2,center[1]+2)).sel(Y=slice(center[0]-1,center[0]+1)) # Not Sim! Important to utilise larger area around center point to find outermost contour
             # Define outermost contour enclosing the eddy to mask out outlying values
-            max_eta = eta_around_center.max().values
-            min_eta = eta_around_center.min().values
+            max_eta = eta_around_center.max().values    #sim
+            min_eta = eta_around_center.min().values    #sim
 
-            step_size = 0.001
-            num_elements = int((max_eta-min_eta) / step_size) + 1
-            levels_array = np.linspace(min_eta,max_eta,num_elements)
+            step_size = 0.001   #sim
+            num_elements = int((max_eta-min_eta) / step_size) + 1   #sim
+            levels_array = np.linspace(min_eta,max_eta,num_elements)    #sim
 
-            contours = plt.contour(eta_around_center.X,eta_around_center.Y,eta_around_center,levels=levels_array)
-            plt.close()
+            contours = plt.contour(eta_around_center.X,eta_around_center.Y,eta_around_center,levels=levels_array)   #sim
+            plt.close() #sim
 
             # Collect all X and Y points of the paths of all contours
-            all_contour_points = []
+            all_contour_points = [] #sim
 
-            for collection in contours.collections:
-                for path in collection.get_paths():
+            for collection in contours.collections: #sim
+                for path in collection.get_paths(): #sim
                     # Collect the vertices of the path
-                    vertices = path.vertices
-                    all_contour_points.append(vertices)
+                    vertices = path.vertices    #sim
+                    all_contour_points.append(vertices)   #sim
 
             # Identify the Center Point
-            center_point = (center[1], center[0])
+            center_point = (center[1], center[0])   #sim
 
             # Process Contour Paths to Handle Jumps
-            def process_contour_path(vertices, jump_threshold=0.05):
-                segments = []
-                current_segment = [vertices[0]]
+            def process_contour_path(vertices, jump_threshold=0.05): #sim
+                segments = [] #sim
+                current_segment = [vertices[0]] #sim
                 
-                for i in range(1, len(vertices)):
-                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold:
-                        segments.append(np.array(current_segment))
-                        current_segment = [vertices[i]]
+                for i in range(1, len(vertices)): #sim
+                    if np.linalg.norm(vertices[i] - vertices[i-1]) > jump_threshold: #sim
+                        segments.append(np.array(current_segment)) #sim
+                        current_segment = [vertices[i]]     #sim
                     else:
-                        current_segment.append(vertices[i])
+                        current_segment.append(vertices[i]) #sim
                 
                 if current_segment:
-                    segments.append(np.array(current_segment))
+                    segments.append(np.array(current_segment)) #sim
                 
-                return segments
+                return segments     #sim
 
-            processed_contour_segments = []
-            for vertices in all_contour_points:
-                segments = process_contour_path(vertices)
-                processed_contour_segments.extend(segments)
+            processed_contour_segments = []     #sim
+            for vertices in all_contour_points:     #sim
+                segments = process_contour_path(vertices)   #sim
+                processed_contour_segments.extend(segments)   #sim
 
             # Find the Outermost Closed Contour Segment
-            outermost_contour = None
-            max_area = 0
+            outermost_contour = None   #sim
+            max_area = 0    #sim
 
-            def is_closed_contour(vertices, tol=1e-5):
-                distance = np.linalg.norm(vertices[0] - vertices[-1])
-                return distance < tol
+            def is_closed_contour(vertices, tol=1e-5):  #sim
+                distance = np.linalg.norm(vertices[0] - vertices[-1])   #sim
+                return distance < tol   #sim
 
-            def calculate_area(vertices):
-                x = vertices[:, 0]
-                y = vertices[:, 1]
-                return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+            def calculate_area(vertices): #sim
+                x = vertices[:, 0]  #sim
+                y = vertices[:, 1]  #sim
+                return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))    #sim
 
-            def contains_other_contours(outer_contour, all_contours, center_point):
-                outer_path = Path(outer_contour)
-                for contour in all_contours:
-                    if np.array_equal(contour, outer_contour):
-                        continue
-                    contour_path = Path(contour)
-                    if all(outer_path.contains_point(point) for point in contour) and not contour_path.contains_point(center_point):
-                        return True
-                return False
+            def contains_other_contours(outer_contour, all_contours, center_point):     #sim
+                outer_path = Path(outer_contour)    #sim
+                for contour in all_contours:    #sim
+                    if np.array_equal(contour, outer_contour):  #sim
+                        continue    #sim
+                    contour_path = Path(contour)   #sim
+                    if all(outer_path.contains_point(point) for point in contour) and not contour_path.contains_point(center_point):    #sim
+                        return True     #sim
+                return False    #sim
 
-            for vertices in processed_contour_segments:
+            for vertices in processed_contour_segments:     #sim
                 # Create a Path object from the vertices
-                path_obj = Path(vertices)
+                path_obj = Path(vertices)   #sim
                 
                 # Check if the contour segment is closed
-                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed
+                if is_closed_contour(vertices, tol=1e-5):  # Adjust the tolerance value as needed #sim
                     # Check if the center point is inside the contour segment
-                    if path_obj.contains_point(center_point):
+                    if path_obj.contains_point(center_point):   #sim
                         # Calculate the area of the contour segment using the shoelace formula
-                        area = calculate_area(vertices)
+                        area = calculate_area(vertices)     #sim
                         
                         # Check if this contour contains any other contour that does not contain the center point
-                        if not contains_other_contours(vertices, processed_contour_segments, center_point):
+                        if not contains_other_contours(vertices, processed_contour_segments, center_point):     #sim
                             # Update the outermost contour if this one has a larger area
-                            if area > max_area:
-                                max_area = area
-                                outermost_contour = vertices
+                            if area > max_area:   #sim
+                                max_area = area   #sim
+                                outermost_contour = vertices   #sim
 
             # Mask the area of inner eddy eddy
             if outermost_contour is not None:
@@ -1601,7 +1601,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                x_indices = np.where((data.X >= center[1] - 2) & (data.X <= center[1] + 2))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -1637,7 +1637,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
 
     if cold:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-2,center[1]+2)).sel(Y=slice(center[0]-1,center[0]+1))
 
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
@@ -1737,7 +1737,7 @@ def inner_eddy_region_v5(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,war
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
+                x_indices = np.where((data.X >= center[1] - 2) & (data.X <= center[1] + 2))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -1791,7 +1791,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
 
     if warm:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
             min_eta = eta_around_center.min().values
@@ -1890,7 +1890,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -1901,7 +1901,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
             outermost_contour_vel = []
             # Mask the outer eddy regions
             if outermost_contour is not None:
-                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
                 hor_vel_in_center = hor_vel_around_center.where(mask)
                 hor_vel_max = hor_vel_in_center.max().values
                 hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
@@ -1957,7 +1957,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                                 mask.values = mask_flattened.reshape(mask.shape)
 
                                 # Update eddies
-                                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2002,7 +2002,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
 
     if cold:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
 
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
@@ -2102,7 +2102,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2113,7 +2113,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
 
             # Mask the outer eddy regions
             if outermost_contour is not None:
-                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+                hor_vel_around_center = hor_vel.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
                 hor_vel_in_center = hor_vel_around_center.where(mask)
                 hor_vel_max = hor_vel_in_center.max().values
                 hor_vel_center = hor_vel_in_center.sel(X=center[1],Y=center[0]).values
@@ -2170,7 +2170,7 @@ def Full_eddy_region_v1(eddyCenterpoints=list,eta=xr.DataArray(),hor_vel=xr.Data
                                 mask.values = mask_flattened.reshape(mask.shape)
 
                                 # Update eddies
-                                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2220,7 +2220,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
 
     if warm:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
             min_eta = eta_around_center.min().values
@@ -2325,7 +2325,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2346,7 +2346,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2378,7 +2378,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
 
     if cold:
         for center in eddyCenterpoints:
-            eta_around_center = eta.sel(X=slice(center[1]-1.5,center[1]+1.5)).sel(Y=slice(center[0]-1,center[0]+1))
+            eta_around_center = eta.sel(X=slice(center[1]-1,center[1]+1)).sel(Y=slice(center[0]-1,center[0]+1))
 
             # Define outermost contour enclosing the eddy to mask out outlying values
             max_eta = eta_around_center.max().values
@@ -2484,7 +2484,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
@@ -2505,7 +2505,7 @@ def Full_eddy_region_v2(eddyCenterpoints=list,eta=xr.DataArray(),cold=False,warm
                 mask.values = mask_flattened.reshape(mask.shape)
 
                 # Update eddies
-                x_indices = np.where((data.X >= center[1] - 1.5) & (data.X <= center[1] + 1.5))[0]
+                x_indices = np.where((data.X >= center[1] - 1) & (data.X <= center[1] + 1))[0]
                 y_indices = np.where((data.Y >= center[0] - 1) & (data.Y <= center[0] + 1))[0]
 
                 current_subset = data.isel(X=x_indices, Y=y_indices)
